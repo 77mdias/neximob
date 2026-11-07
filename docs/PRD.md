@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.0, rascunho para validação |
+| **Versão** | 1.1, rascunho para validação |
 | **Data** | 07/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
-| **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) |
+| **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 > **Como ler este documento.** O conteúdo vem das fontes acima. O que foi acrescentado aqui e não está nas fontes aparece marcado como **(proposto)** e precisa ser validado antes de virar requisito.
 
@@ -177,7 +177,7 @@ Ainda não há metas numéricas. Elas devem sair da validação com contadores (
 | **Resumo do mês** | Topo da tela com quatro cards: Recebido (com barra de %), A receber, Clientes em atraso e Guias a fazer no mês | Pronto | RF-03 |
 | **Cobranças** | Lista do mês com status (Pago, Vence dia X, Vence hoje, Atrasado há N dias), filtros, marcar pago e desfazer, ajustar o valor do mês, mensagem pronta e data do próximo lembrete. Na versão final: envio real, Pix com baixa automática e histórico | Envio simulado | RF-10 a RF-18 |
 | **Obrigações** | Checklist do mês por obrigação, com "X de Y feitos", barra de progresso, avisos de prazo e próximos prazos do ano. Na versão final: calendário editável | Datas de exemplo | RF-20 a RF-24 |
-| **Régua de cobrança** | Quatro lembretes (3 dias antes, no dia e 3 dias depois ligados; 7 dias depois desligado), textos editáveis com campos, chave Pix e prévia. Na versão final: disparo diário automático | Sem disparo real | RF-30 a RF-35 |
+| **Régua de cobrança** | Quatro lembretes (3 dias antes, no dia e 3 dias depois ligados; 7 dias depois desligado), chave Pix e prévia. Textos editáveis no e-mail; no WhatsApp, modelos fixos aprovados (ADR-0002). Na versão final: disparo diário automático, que inclui as pendências de meses anteriores | Sem disparo real | RF-30 a RF-35 |
 | **Clientes** | Cadastro com nome, tipo, honorário e dia de vencimento (1 a 28). Na versão final: telefone, e-mail, edição e exclusão | Parcial | RF-01, RF-02, RF-04 a RF-06 |
 | **Conta e assinatura** | Login por e-mail, uma conta por contador, consentimento (LGPD) e assinatura mensal | A fazer | RF-40 a RF-45, RF-50 |
 
@@ -230,6 +230,8 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 - **LGPD.** O sistema guarda nome, valores e situação fiscal de terceiros. Precisa de login seguro e de consentimento.
 - **Regras fiscais mudam.** Datas e obrigações devem ser fáceis de atualizar e conferidas por um contador.
 - **Experiência.** Tudo em português, valores em reais, funcionando no celular, mantendo o visual do protótipo.
+- **Tecnologia.** Next.js e Supabase (Postgres e Auth), decididos em 07/11/2026 (ADR-0001).
+- **Documentos dos clientes.** O app não guarda CPF nem CNPJ. Quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 
 ### 10.3 Premissas (proposto)
 
@@ -245,9 +247,10 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Risco | Impacto | Mitigação |
 |---|---|---|
 | O contador não adota o app e continua cobrando pelo WhatsApp | Produto sem uso | Validar antes de programar (F1); primeiro acesso em poucos minutos; régua ligada por padrão |
-| Bloqueio do número de WhatsApp | Cobrança para de chegar e o contador perde o número | Só a API oficial, com modelos aprovados (RNF-04); começar pelo e-mail |
+| Bloqueio do número de WhatsApp | Cobrança para de chegar e o contador perde o número | Só a API oficial, com modelos fixos revisados e aprovados (RNF-04, ADR-0002); começar pelo e-mail |
+| Excesso de mensagens para cliente com vários meses em aberto | Incômodo, denúncias e risco ao número | **(proposto)** Uma mensagem por dia e canal, com o total em aberto (RN-19) |
 | Datas fiscais erradas ou desatualizadas | Guia esquecida, perda de confiança | Calendário editável (RF-23); datas conferidas por um contador antes de publicar |
-| Incidente com dados de terceiros | Dano ao cliente e sanções da LGPD | Login seguro, isolamento entre contas, consentimento e coleta mínima de dados (RNF-05, RNF-06) |
+| Incidente com dados de terceiros | Dano ao cliente e sanções da LGPD | Login seguro, isolamento entre contas, consentimento e coleta mínima de dados; CPF e CNPJ nunca gravados no app (RNF-05, RNF-06, ADR-0003) |
 | Lembrete enviado a quem já pagou, porque a baixa manual atrasou | Constrangimento com o cliente | Só dispara para quem não pagou (RN-09); baixa automática por Pix (RF-17); **(proposto)** texto com "se já pagou, desconsidere" |
 | Dependência de provedores de Pix, WhatsApp e e-mail | Troca de provedor cara, ou indisponibilidade | **(proposto)** Isolar cada integração no código; escolher os provedores na documentação técnica |
 | Expectativa de que o app calcule impostos | Frustração e risco de responsabilidade | Comunicação clara no produto e na venda (RN-12) |
@@ -255,13 +258,26 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 
 ---
 
-## 12. Decisões em aberto
+## 12. Decisões
+
+### 12.1 Decisões tomadas
+
+| Decisão | O que ficou decidido | Data | Registro |
+|---|---|---|---|
+| Stack | Next.js + Supabase (Postgres e Auth) | 07/11/2026 | ADR-0001 |
+| Cobranças de meses anteriores | Aparecem no mês corrente e continuam recebendo lembretes até serem pagas | 07/11/2026 | SRS: RN-18, Q-02 |
+| Texto das mensagens | Texto livre só no e-mail; no WhatsApp, modelos fixos aprovados na Meta | 07/11/2026 | ADR-0002 |
+| CPF e CNPJ dos clientes | Nunca gravados no app; ficam só no provedor de Pix | 07/11/2026 | ADR-0003 |
+
+### 12.2 Decisões em aberto
 
 | Decisão | Contexto | Quando decidir |
 |---|---|---|
 | Preço mensal do app | Perguntar ao contador | F1 |
 | Provedor de Pix | Asaas ou similar, com aviso automático de pagamento | Antes da F4 |
 | Provedor de WhatsApp | API oficial direta ou provedor parceiro | Antes da F4 |
+| Número do WhatsApp | O número de cada contador ou um número único da plataforma (SRS, Q-16) | Antes da F4 |
+| Conta do Pix | O dinheiro cai na conta do contador ou numa conta da plataforma (SRS, Q-18) | Antes da F4 |
 | Provedor de e-mail **(proposto)** | Serviço de e-mail transacional | Antes da F3 |
 | Página do cliente | Se o cliente do contador terá uma página para ver e pagar o honorário | Antes da F4 |
 | Nome final | Os documentos usam "Agenda Contábil", o protótipo ainda usa "Prazo Certo" na chave de armazenamento e o repositório se chama `neximob` | **(proposto)** Antes da F2, para o código novo já nascer com o nome final |
@@ -269,7 +285,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Mais de um usuário por escritório | Hoje é uma conta por contador | Validação (F1) |
 | Metas numéricas das métricas | Ainda não definidas | Depois da F1 |
 
-As questões de regra e de comportamento (cliente cadastrado depois do vencimento, cobranças de meses anteriores, prazos em fim de semana etc.) estão na seção 9 do [SRS](./SRS.md).
+As questões de regra e de comportamento (cliente cadastrado depois do vencimento, prazos em fim de semana etc.) estão na seção 9 do [SRS](./SRS.md). As decisões de arquitetura ficam em [docs/adr](./adr/README.md).
 
 ---
 
@@ -322,3 +338,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | Versão | Data | Alteração |
 |---|---|---|
 | 1.0 | 07/11/2026 | Primeira versão, a partir da Documentação do Produto e do Briefing de 03/11/2026 |
+| 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), pendências de meses anteriores (Q-02), WhatsApp com modelos fixos (ADR-0002) e CPF/CNPJ só no provedor (ADR-0003) |

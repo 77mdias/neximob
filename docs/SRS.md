@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.0, rascunho para validação |
+| **Versão** | 1.1, rascunho para validação |
 | **Data** | 07/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
-| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 ---
 
@@ -35,7 +35,9 @@ Ficam fora: emissão de nota fiscal, integração com a Receita Federal ou o e-C
 | `RF-xx` | Requisito funcional |
 | `RNF-xx` | Requisito não funcional |
 | `RN-xx` | Regra de negócio |
-| `Q-xx` | Questão em aberto (seção 9) |
+| `Q-xx` | Questão de produto ou de regra (seção 9) |
+| `ADR-xxxx` | Decisão de arquitetura, registrada em [docs/adr](./adr/README.md) |
+| **Origem: Decisão** | Decidido pelo responsável do produto; a data está na seção 9.1 |
 | **Status: Feito** | Já existe no protótipo. Na versão final precisa ser reimplementado com dados no servidor |
 | **Status: Simulado** | A tela existe, mas a ação não acontece de verdade |
 | **Status: A fazer** | Falta construir |
@@ -73,7 +75,7 @@ O glossário completo está no [PRD](./PRD.md), seção 14. Os termos abaixo tê
 
 | | Protótipo (hoje) | Versão final |
 |---|---|---|
-| Tecnologia | Página HTML com JavaScript puro, sem biblioteca | Aplicação web com servidor e banco de dados |
+| Tecnologia | Página HTML com JavaScript puro, sem biblioteca | Next.js com Supabase (Postgres e Auth) (ADR-0001) |
 | Dados | Objeto salvo no navegador (chave de armazenamento com o nome antigo "Prazo Certo") | No servidor, por conta de contador, acessíveis do celular e do computador |
 | Clientes | De exemplo | Reais, cadastrados pelo contador |
 | Envio de cobrança | Simulado: mensagem pronta para copiar | E-mail e WhatsApp automáticos, pela régua |
@@ -145,7 +147,8 @@ flowchart LR
 
 ### 2.6 Premissas e dependências
 
-- **Stack sugerida pelo Briefing (não obrigatória):** Next.js (React) na interface; Supabase ou Firebase para login e banco; tarefa agendada no servidor para a rotina diária; e-mail primeiro e WhatsApp pela API oficial ou por um provedor; Asaas ou similar para o Pix. A decisão final fica para a documentação técnica.
+- **Stack decidida (ADR-0001):** Next.js (React) na interface e nas rotas de servidor; Supabase para o banco (Postgres) e o login (Auth). A rotina diária e as integrações (e-mail primeiro, depois WhatsApp pela API oficial e Pix por um provedor como o Asaas) terão ADRs próprias.
+- O app não guarda CPF nem CNPJ dos clientes; quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 - O contador tem uma chave Pix.
 - Os clientes têm e-mail ou celular para receber os lembretes.
 - Cada contador tem poucos clientes. **(proposto)** A especificação considera até algumas centenas por conta.
@@ -231,8 +234,8 @@ Quatro cards no topo da tela, calculados para o mês de referência:
 | Card | Cálculo |
 |---|---|
 | **Recebido** | Soma do valor total (RN-01) das cobranças pagas. A barra mostra Recebido ÷ (Recebido + A receber) |
-| **A receber** | Soma do valor total das cobranças não pagas |
-| **Clientes em atraso** | Quantidade de cobranças com status Atrasado (RN-02) |
+| **A receber** | Soma do valor total das cobranças não pagas do mês de referência. **(proposto)** Logo abaixo, numa linha separada, o total em aberto de meses anteriores (RN-18) |
+| **Clientes em atraso** | Quantidade de clientes com alguma cobrança atrasada (RN-02), do mês de referência ou de meses anteriores (RN-18) |
 | **Guias a fazer no mês** | Quantidade de pares (obrigação, cliente) com prazo no mês de referência e ainda não marcados como feitos |
 
 > Os cálculos acima são a interpretação deste documento e devem ser conferidos no protótipo. Em particular: "Recebido" considera o mês da cobrança, e não a data do pagamento.
@@ -240,6 +243,7 @@ Quatro cards no topo da tela, calculados para o mês de referência:
 **Critérios de aceite**
 - Dado um mês com R$ 1.000,00 recebidos e R$ 500,00 a receber, quando a tela carrega, então o card Recebido mostra R$ 1.000,00 e a barra marca 67%.
 - Dado que o contador marca uma cobrança como paga, quando a ação termina, então os quatro cards se atualizam sem recarregar a página.
+- Dado que um cliente pagou novembro mas não pagou outubro, quando a tela de novembro carrega, então ele conta em "Clientes em atraso".
 
 #### RF-04 · Editar e excluir cliente
 
@@ -290,6 +294,7 @@ Cada cobrança mostra um status, calculado pela RN-02:
 - Ordem da lista: atrasados, vence hoje, a vencer, pagos.
 - **(proposto)** Dentro de cada grupo: atrasados com mais dias primeiro; a vencer pela data mais próxima; pagos pela data de pagamento mais recente.
 - **(proposto)** "A vencer" inclui as cobranças que vencem hoje.
+- **(proposto)** Cliente com cobrança de mês anterior em aberto mostra o selo "N meses em aberto" e entra no filtro **Em atraso**, mesmo que o mês corrente esteja pago (RN-18).
 
 #### RF-12 · Marcar como pago e desfazer
 
@@ -317,6 +322,7 @@ Cada cobrança mostra um status, calculado pela RN-02:
 
 - O botão **Cobrar** mostra a mensagem do passo certo para o status da cobrança (RN-03), com os campos preenchidos (RN-11).
 - O contador pode **copiar** a mensagem e **registrar o envio**.
+- **(proposto)** Se o cliente tiver pendências de meses anteriores, a mensagem traz também o bloco de pendências (RN-19).
 - No protótipo, o registro é simulado. Na versão final, o registro cria um envio com o canal "manual" (RF-35).
 
 > Passo usado pela mensagem manual quando está desligado na régua: ver Q-03.
@@ -331,11 +337,13 @@ Cada cobrança mostra um status, calculado pela RN-02:
 | | E-mail (F3) | WhatsApp (F4) |
 |---|---|---|
 | Disparo | Rotina diária (RF-34) | Rotina diária (RF-34) |
-| Conteúdo | Texto do passo da régua com os campos preenchidos | Modelo de mensagem aprovado na Meta, com os campos como variáveis (RNF-04) |
+| Conteúdo | Texto do passo da régua, editável pelo contador, com os campos preenchidos | Modelo fixo da plataforma, aprovado na Meta, com os campos como variáveis. O contador não edita o texto (ADR-0002) |
 | Requisitos do canal | **(proposto)** Remetente com o nome do contador e resposta para o e-mail dele | API oficial; **(proposto)** consentimento (opt-in) do cliente para receber mensagens |
 | Registro | Cada tentativa gera um envio (RF-35) | Cada tentativa gera um envio (RF-35) |
 
-> Os textos da régua são editáveis (RF-31), mas no WhatsApp só podem ser enviados modelos aprovados pela Meta: ver Q-04. Canal por cliente: ver Q-05.
+Cada mensagem leva a cobrança do mês e as pendências de meses anteriores, se houver. O cliente recebe no máximo uma mensagem por dia em cada canal (RN-18, RN-19).
+
+> Por que o texto do WhatsApp não é editável: ver ADR-0002. Canal por cliente: ver Q-05. Número que envia as mensagens: ver Q-16.
 
 #### RF-17 · Pix com baixa automática
 
@@ -345,16 +353,17 @@ Cada cobrança mostra um status, calculado pela RN-02:
 - **(proposto)** Aviso de pagamento repetido não gera baixa duplicada.
 - **(proposto)** Valor pago diferente do valor total: a cobrança fica marcada para revisão do contador e não recebe baixa automática (Q-13).
 - **(proposto)** Se o contador der baixa manual numa cobrança com Pix em aberto, o sistema cancela a cobrança no provedor.
+- **CPF/CNPJ (ADR-0003):** quando o provedor exigir, o contador informa o CPF ou o CNPJ no cadastro do cliente. O servidor repassa o dado ao provedor e guarda só o identificador do pagador. O documento nunca é gravado no banco, em logs ou no navegador (RN-20).
+- **(proposto)** Cliente sem cadastro no provedor: a mensagem usa a chave Pix do contador, e a baixa continua manual.
+- **(proposto)** Com pendências, o Pix da mensagem cobra o total em aberto, e o pagamento dá baixa em todas as cobranças incluídas (Q-17).
 
-> O provedor ainda não foi escolhido (Asaas ou similar). Alguns provedores exigem o CPF ou CNPJ do pagador para emitir a cobrança: ver Q-12.
+> O provedor ainda não foi escolhido (Asaas ou similar). Em que conta o dinheiro cai: ver Q-18.
 
 #### RF-18 · Histórico dos meses anteriores
 
 - O contador troca o mês de referência no topo e vê as cobranças, os status, os valores, os envios e as obrigações feitas de meses anteriores.
-- **(proposto)** Cobranças não pagas de meses anteriores continuam com status "Atrasado há N dias", contado a partir do vencimento delas (RN-02).
+- Cobranças não pagas de meses anteriores continuam com status "Atrasado há N dias", contado a partir do vencimento delas (RN-02). Elas **aparecem no mês corrente e continuam recebendo lembretes até serem pagas** (decisão da Q-02, RN-18).
 - **(proposto)** O contador pode dar baixa numa cobrança de mês anterior.
-
-> Se as cobranças antigas não pagas aparecem no mês corrente e se continuam na régua: ver Q-02.
 
 ### 3.4 Obrigações
 
@@ -419,7 +428,8 @@ A aba Obrigações mostra, além do checklist do mês, os próximos prazos do an
 #### RF-31 · Ligar, desligar e editar
 
 - Cada passo pode ser ligado ou desligado.
-- O texto de cada passo pode ser editado.
+- O texto de cada passo pode ser editado. **A edição vale para o e-mail.** No WhatsApp, os textos são modelos fixos aprovados na Meta, e a aba mostra a prévia do WhatsApp sem edição (ADR-0002).
+- **(proposto)** Texto de pendência, também editável para o e-mail, usado quando só restam cobranças de meses anteriores em aberto (RN-18).
 - **(proposto)** Botão para restaurar o texto padrão.
 
 #### RF-32 · Campos da mensagem
@@ -432,6 +442,8 @@ A aba Obrigações mostra, além do checklist do mês, os próximos prazos do an
 | `{venc}` | Data de vencimento da cobrança | "10/11" |
 | `{pix}` | Chave Pix do contador | Como cadastrada |
 
+No WhatsApp, os mesmos campos viram as variáveis do modelo aprovado (ADR-0002). O bloco de pendências (RN-19) é acrescentado pelo sistema, sem campo novo.
+
 **(proposto)** Ao editar o texto, um campo desconhecido (por exemplo, `{nomee}`) gera um aviso antes de salvar.
 
 #### RF-33 · Chave Pix e prévia
@@ -443,14 +455,17 @@ A aba Obrigações mostra, além do checklist do mês, os próximos prazos do an
 
 Uma vez por dia, **(proposto)** às 9h no fuso de Brasília:
 
-1. Seleciona as cobranças **não pagas** de clientes **ativos** (RN-09, RN-16).
-2. Para cada passo **ligado** da régua do contador, calcula a data do passo.
-3. Se a data do passo é hoje e esse passo ainda não foi enviado por esse canal (RN-13), monta a mensagem e envia pelos canais disponíveis do cliente.
-4. Registra cada tentativa como envio (RF-35).
+1. Seleciona os clientes **ativos** com alguma cobrança **não paga**, do mês corrente ou de meses anteriores (RN-09, RN-16, RN-18).
+2. Para cada passo **ligado** da régua do contador, calcula a data do passo sobre o vencimento do cliente no mês corrente.
+3. Se a data do passo é hoje e esse passo ainda não foi enviado ao cliente neste mês por esse canal (RN-13), monta **uma única mensagem** com a cobrança do mês e as pendências (RN-19) e envia pelos canais disponíveis do cliente.
+4. **(proposto)** Se a cobrança do mês já foi paga e só restam pendências, envia só no passo "No dia", com o texto de pendência.
+5. Registra cada tentativa como envio (RF-35), com as cobranças incluídas na mensagem.
 
 **Critérios de aceite**
 - Dado que há uma cobrança não paga com vencimento no dia 10 e o passo −3 está ligado, quando a rotina roda no dia 7, então é enviado o lembrete "3 dias antes".
-- Dado que a mesma cobrança foi paga no dia 9, quando a rotina roda no dia 10, então nada é enviado.
+- Dado que a mesma cobrança foi paga no dia 9 e o cliente não tem pendências, quando a rotina roda no dia 10, então nada é enviado.
+- Dado que o cliente não pagou outubro nem novembro, quando a rotina dispara o passo "No dia" de novembro, então ele recebe uma única mensagem com novembro, a pendência de outubro e o total em aberto.
+- Dado que o cliente pagou novembro mas não pagou outubro, quando chega o dia de vencimento de novembro, então ele recebe a mensagem de pendência; nos outros passos de novembro, nada é enviado **(proposto)**.
 - Dado o passo +7 desligado, quando a rotina roda no dia 17, então nada é enviado.
 - Dado que a rotina já rodou hoje, quando ela roda de novo no mesmo dia, então nenhum cliente recebe a mesma mensagem duas vezes (mesmo passo e canal).
 
@@ -458,7 +473,7 @@ Uma vez por dia, **(proposto)** às 9h no fuso de Brasília:
 
 #### RF-35 · Registro dos envios
 
-- Cada envio guarda: cobrança, passo, canal (e-mail, WhatsApp ou manual), data e hora e status.
+- Cada envio guarda: cliente, mês da régua, passo, canal (e-mail, WhatsApp ou manual), data e hora, status e as cobranças incluídas na mensagem.
 - **(proposto)** Status: `pendente`, `enviado`, `falhou` e, quando o provedor informar, `entregue` e `lido`.
 - O contador vê os envios de cada cobrança. **(proposto)** Envios com falha aparecem em destaque.
 
@@ -527,11 +542,14 @@ As regras marcadas como **invioláveis** estão na seção 6 do Briefing e não 
 | RN-10 | Obrigações por tipo: MEI → DAS-MEI e DASN-SIMEI; Simples → DAS e DEFIS; PF → IRPF | Sim | Briefing | RF-02, RF-20 |
 | RN-11 | Campos da mensagem: `{nome}`, `{mes}`, `{valor}`, `{venc}`, `{pix}` | Sim | Briefing | RF-32 |
 | RN-12 | O app não calcula impostos e não deve prometer isso | Sim | Briefing | Todo o produto |
-| RN-13 | Cada passo da régua é enviado no máximo uma vez por cobrança e canal | Não | Proposto | RF-34, RF-35 |
+| RN-13 | Cada passo da régua é enviado no máximo uma vez por cliente, mês e canal | Não | Proposto | RF-34, RF-35 |
 | RN-14 | Cobrança paga não muda de valor; a mudança de honorário vale para as cobranças não pagas do mês corrente em diante | Não | Proposto | RF-04 |
 | RN-15 | O serviço extra não passa para o mês seguinte | Sim | Briefing ("só daquele mês") | RF-02, RF-13 |
 | RN-16 | Cliente inativo não gera cobrança, não recebe lembrete e não entra no checklist | Não | Proposto | RF-06, RF-34 |
 | RN-17 | Cliente sem e-mail e sem telefone não recebe envio automático, e o app avisa o contador | Não | Proposto | RF-05, RF-34 |
+| RN-18 | Cobrança não paga de mês anterior continua em aberto: aparece no mês corrente, conta em "Clientes em atraso" e continua recebendo lembretes até ser paga | Não | Decisão (Q-02) | RF-03, RF-11, RF-18, RF-34 |
+| RN-19 | O cliente recebe no máximo uma mensagem por dia em cada canal. A cobrança do mês e as pendências vão juntas, com o total em aberto. Se só restam pendências, a mensagem sai uma vez por mês, no dia do vencimento | Não | Proposto (mecanismo da Q-02) | RF-14, RF-16, RF-34 |
+| RN-20 | O app não guarda CPF nem CNPJ dos clientes. Esses dados ficam só no provedor de Pix | Não | Decisão (Q-12) | RF-17, RNF-16 |
 
 ### 4.1 Detalhe da RN-02 (status)
 
@@ -560,6 +578,28 @@ proximo = menor (vencimento + p.dias)
           com vencimento + p.dias ≥ hoje
 ```
 
+### 4.3 Detalhe da RN-18 e da RN-19 (pendências)
+
+A régua roda por **cliente**, sobre o calendário do mês corrente. As cobranças de meses anteriores não ganham uma régua própria: elas entram nas mensagens do mês. Assim, o número de mensagens fica limitado, por mais meses que estejam em aberto.
+
+```text
+# Rotina diária, para cada cliente ativo com alguma cobrança em aberto
+venc_mes   = vencimento do cliente no mês corrente
+pendencias = cobranças não pagas de meses anteriores
+mes_aberto = cobrança do mês corrente existe e não está paga
+
+para cada passo p ligado, e para cada canal do cliente:
+    se venc_mes + p.dias = hoje e (cliente, mês, p, canal) ainda não foi enviado:
+        se mes_aberto:
+            mensagem = texto do passo p + bloco de pendências (se houver)
+        senão se pendencias e p.dias = 0:
+            mensagem = texto de pendência          # só pendências: uma vez por mês
+        senão:
+            não envia
+```
+
+Exemplo de bloco de pendências **(proposto)**: "Também está em aberto: outubro (R$ 300,00). Total em aberto: R$ 600,00."
+
 ---
 
 ## 5. Modelo de dados
@@ -572,8 +612,10 @@ erDiagram
     CONTADORES ||--o{ REGUA : "configura"
     CONTADORES ||--o{ OBRIGACOES : "mantém"
     CLIENTES ||--o{ COBRANCAS : "tem uma por mês"
-    COBRANCAS ||--o{ ENVIOS : "registra"
+    CLIENTES ||--o{ ENVIOS : "recebe"
     REGUA ||--o{ ENVIOS : "passo enviado"
+    ENVIOS ||--|{ ENVIO_COBRANCAS : "inclui"
+    COBRANCAS ||--o{ ENVIO_COBRANCAS : "lembrada em"
     OBRIGACOES ||--o{ OBRIGACOES_FEITAS : "marcada em"
     CLIENTES ||--o{ OBRIGACOES_FEITAS : "feita para"
 
@@ -594,6 +636,7 @@ erDiagram
         text telefone
         text email
         boolean ativo
+        text provedor_cliente_id "ID do pagador no provedor de Pix"
     }
     COBRANCAS {
         uuid id PK
@@ -607,11 +650,16 @@ erDiagram
     }
     ENVIOS {
         uuid id PK
-        uuid cobranca_id FK
+        uuid cliente_id FK
+        date mes "mês da régua"
         uuid regua_id FK "passo da régua"
         text canal "email, whatsapp ou manual"
         timestamp enviado_em
         text status
+    }
+    ENVIO_COBRANCAS {
+        uuid envio_id PK, FK
+        uuid cobranca_id PK, FK
     }
     REGUA {
         uuid id PK
@@ -641,9 +689,10 @@ erDiagram
 | Tabela | Campos principais (fonte) | Restrições e campos **(proposto)** |
 |---|---|---|
 | `contadores` | id, nome, e-mail, chave Pix, plano | E-mail único. Acrescentar: data do aceite dos termos e versão aceita (RF-43), data de criação |
-| `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas |
+| `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentar: `provedor_cliente_id`, o identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
 | `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentar: identificador da cobrança no provedor de Pix (RF-17) |
-| `envios` | id, cobrança, passo da régua, canal, enviado em, status | No máximo um envio bem-sucedido por cobrança, passo e canal (RN-13). Acrescentar: mensagem de erro e identificador no provedor |
+| `envios` | id, cobrança, passo da régua, canal, enviado em, status | **Ajustado pela Q-02:** o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. No máximo um envio bem-sucedido por cliente, mês, passo e canal (RN-13). Acrescentar: mensagem de erro e identificador no provedor |
+| `envio_cobrancas` | Tabela nova **(proposto)** | Liga cada envio às cobranças que ele lembrou: a do mês e as pendências (RN-19) |
 | `regua` | id, contador, dias (−3, 0, +3, +7), nome, ativo, texto | Um passo por contador e número de dias |
 | `obrigacoes` | id, contador, nome, tipos de cliente, mensal ou anual, dia ou data | Mensal: dia de 1 a 31. Anual: dia e mês. Acrescentar: ativo |
 | `obrigacoes_feitas` | id, obrigação, cliente, período, feito em | Uma marcação por obrigação, cliente e período. Período `AAAA-MM` (mensal) ou `AAAA` (anual), pela RN-06 |
@@ -659,7 +708,7 @@ erDiagram
 | RNF-01 | Usabilidade | Funcionar no celular; no celular, a lista vira cartões | Feito | F2 | Doc |
 | RNF-02 | Usabilidade | Tema claro e escuro | Feito | F2 | Doc |
 | RNF-03 | Disponibilidade dos dados | Dados guardados no servidor e acessíveis do celular e do computador | A fazer | F2 | Doc |
-| RNF-04 | Conformidade | WhatsApp só pela API oficial, com modelos aprovados, para não bloquear o número | A fazer | F4 | Doc |
+| RNF-04 | Conformidade | WhatsApp só pela API oficial, com modelos fixos aprovados, para não bloquear o número (ADR-0002) | A fazer | F4 | Doc |
 | RNF-05 | Privacidade | LGPD: login seguro e consentimento, porque o sistema guarda dados de terceiros | A fazer | F2 | Doc |
 | RNF-06 | Segurança | Um contador nunca acessa dados de outro. O isolamento é garantido no servidor e coberto por testes automatizados | A fazer | F2 | Proposto |
 | RNF-07 | Segurança | Comunicação só por HTTPS; chaves de provedores fora do código; avisos de pagamento (webhooks) autenticados antes de qualquer baixa | A fazer | F2, F4 | Proposto |
@@ -671,7 +720,7 @@ erDiagram
 | RNF-13 | Acessibilidade | Fluxos principais conformes com WCAG 2.1 AA, inclusive contraste nos dois temas | A fazer | F2 | Proposto |
 | RNF-14 | Entregabilidade | E-mails enviados de domínio autenticado (SPF, DKIM e DMARC) | A fazer | F3 | Proposto |
 | RNF-15 | Auditoria | Registrar quem fez e quando: baixa manual, desfazer baixa e mudança de honorário | A fazer | F2 | Proposto |
-| RNF-16 | Privacidade | Coletar só os dados necessários. O modelo não guarda CPF nem CNPJ, a menos que o provedor de Pix exija (Q-12) | A fazer | F2 | Proposto |
+| RNF-16 | Privacidade | Coletar só os dados necessários. CPF e CNPJ nunca são gravados: vão direto ao provedor de Pix e não aparecem no banco, em logs, em relatórios de erro, em ferramentas de análise nem no navegador. Coberto por teste (ADR-0003) | A fazer | F2 (coleta mínima), F4 (CPF/CNPJ) | Decisão (Q-12) |
 
 ---
 
@@ -680,11 +729,11 @@ erDiagram
 | Interface | Fase | Uso | Requisitos |
 |---|---|---|---|
 | **Interface do usuário** | F2 | Tela única: topo (mês de referência e + Novo cliente), resumo do mês e abas Cobranças, Obrigações e Régua de cobrança. Detalhes no [Mapa de fluxo](./Mapa%20de%20fluxo.md) | RF-01 a RF-35, RNF-01, RNF-02 |
-| **Autenticação** | F2 | Login por e-mail. Sugestão do Briefing: Supabase Auth ou Firebase Auth | RF-40 a RF-45 |
+| **Autenticação** | F2 | Login por e-mail com Supabase Auth (ADR-0001) | RF-40 a RF-45 |
 | **Agendador** | F3 | Executa a rotina diária | RF-34, RNF-09 |
 | **Provedor de e-mail** | F3 | Envio transacional dos lembretes. **(proposto)** Recebimento do status de entrega e devolução | RF-16, RF-35, RNF-14 |
-| **WhatsApp (API oficial)** | F4 | Envio de modelos aprovados; recebimento do status de entrega e leitura | RF-16, RF-35, RNF-04 |
-| **Provedor de Pix** | F4 | Criar e cancelar cobrança Pix; receber o aviso de pagamento | RF-17, RNF-07 |
+| **WhatsApp (API oficial)** | F4 | Envio dos modelos fixos aprovados (ADR-0002); recebimento do status de entrega e leitura | RF-16, RF-35, RNF-04 |
+| **Provedor de Pix** | F4 | Cadastrar o pagador com CPF ou CNPJ, guardados só no provedor (ADR-0003); criar e cancelar cobrança Pix; receber o aviso de pagamento | RF-17, RNF-07, RNF-16 |
 | **Cobrança da assinatura** | F5 | Cobrança recorrente do plano do contador | RF-50 |
 
 ---
@@ -695,7 +744,7 @@ erDiagram
 
 | Objetivo | Requisitos e regras | Fases |
 |---|---|---|
-| O1 · Cobrança no piloto automático | RF-15, RF-16, RF-17, RF-30 a RF-35, RN-03, RN-04, RN-08, RN-09, RN-13 | F3, F4 |
+| O1 · Cobrança no piloto automático | RF-15, RF-16, RF-17, RF-30 a RF-35, RN-03, RN-04, RN-08, RN-09, RN-13, RN-18, RN-19 | F3, F4 |
 | O2 · Saber em segundos quanto entrou e quanto falta | RF-03, RF-10, RF-11, RF-12, RF-13, RF-18, RN-01, RN-02 | F2, F3 |
 | O3 · Nenhum prazo fiscal esquecido | RF-20 a RF-24, RN-06, RN-10, RNF-11 | F2, F5 |
 | O4 · Cadastrar uma vez | RF-01, RF-02, RF-04, RF-05, RF-06, RN-07, RN-15 | F2 |
@@ -715,16 +764,25 @@ erDiagram
 
 ---
 
-## 9. Questões em aberto
+## 9. Decisões e questões em aberto
+
+### 9.1 Decisões tomadas
+
+| # | Questão | Decisão | Data | Onde |
+|---|---|---|---|---|
+| — | Stack da versão final | Next.js + Supabase (Postgres e Auth) | 07/11/2026 | ADR-0001 |
+| Q-02 | Cobranças não pagas de meses anteriores: aparecem no mês corrente? Continuam recebendo lembretes? | Sim. Aparecem no mês corrente, contam em "Clientes em atraso" e continuam recebendo lembretes até serem pagas. **O mecanismo (mensagem única com o total em aberto, RN-19) está proposto e aguarda confirmação** | 07/11/2026 | RN-18, RN-19, seção 4.3 |
+| Q-04 | Os textos da régua são editáveis, mas o WhatsApp só envia modelos aprovados. Como conciliar? | Texto livre só no e-mail. No WhatsApp, modelos fixos da plataforma, aprovados na Meta, com os campos como variáveis | 07/11/2026 | ADR-0002 |
+| Q-12 | O provedor de Pix exige o CPF ou CNPJ do pagador? | O app não guarda CPF nem CNPJ em nenhuma hipótese. Quando o provedor exigir, o dado vai direto para ele, e o app guarda só o identificador do pagador | 07/11/2026 | ADR-0003, RN-20 |
+
+### 9.2 Em aberto
 
 Estas questões não têm resposta nas fontes e afetam regras ou comportamento. A sugestão de cada uma é só um ponto de partida para a decisão.
 
 | # | Questão | Sugestão | Afeta |
 |---|---|---|---|
 | Q-01 | Cliente cadastrado depois do seu dia de vencimento no mês corrente: cobrar neste mês (já atrasado) ou só a partir do próximo? | Perguntar no cadastro, com "próximo mês" como padrão | RF-01, RF-02 |
-| Q-02 | Cobranças não pagas de meses anteriores: aparecem no mês corrente? Continuam recebendo lembretes? Contam em "Clientes em atraso"? | Mostrar um aviso "pendências de meses anteriores" no mês corrente, sem lembretes automáticos | RF-03, RF-18, RF-34 |
 | Q-03 | A mensagem manual (RN-03) usa o texto de um passo que está desligado na régua? | Sim: desligar um passo só impede o envio automático | RF-14 |
-| Q-04 | Os textos da régua são editáveis, mas o WhatsApp só envia modelos aprovados. Como conciliar? | Edição livre vale só para o e-mail; no WhatsApp, o contador escolhe entre modelos já aprovados | RF-16, RF-31, RNF-04 |
 | Q-05 | Por qual canal cada cliente recebe: e-mail, WhatsApp ou os dois? | Todos os canais com contato cadastrado, com opção de escolher por cliente | RF-05, RF-16 |
 | Q-06 | Prazo fiscal em fim de semana ou feriado: mostrar a data ajustada? A regra de prorrogação varia por obrigação | Mostrar a data cadastrada e deixar o ajuste para o calendário editável (RF-23), conferido por um contador | RF-22, RF-23 |
 | Q-07 | O DAS do checklist de novembro é a guia que vence em 20/11 (competência outubro)? O rótulo precisa deixar isso claro | Rotular pelo vencimento e mostrar a competência | RF-20, RF-21 |
@@ -732,10 +790,12 @@ Estas questões não têm resposta nas fontes e afetam regras ou comportamento. 
 | Q-09 | Se a rotina diária não rodar num dia, a próxima execução envia os passos perdidos? | Enviar só o passo mais recente que ficou para trás, para não mandar várias mensagens de uma vez | RF-34, RNF-09 |
 | Q-10 | Em que horário os lembretes são disparados? | 9h, no fuso de Brasília | RF-34 |
 | Q-11 | Qual o formato de `{mes}` e `{venc}`? | "novembro" e "10/11" | RF-32 |
-| Q-12 | O provedor de Pix exige o CPF ou CNPJ do pagador? | Verificar ao escolher o provedor. Se exigir, pedir o dado só para quem paga por Pix | RF-17, RNF-16 |
 | Q-13 | O que fazer quando o valor pago por Pix difere do valor total? | Marcar para revisão do contador, sem baixa automática | RF-17 |
 | Q-14 | Um escritório pequeno com mais de uma pessoa compartilha a conta? | Manter uma conta por contador na F2 e reavaliar depois da validação | RF-41 |
 | Q-15 | Excluir ou inativar cliente: quanto tempo guardar o histórico, considerando a LGPD? | Inativar por padrão; excluir apaga tudo, com confirmação | RF-04, RF-06 |
+| Q-16 | De qual número saem as mensagens de WhatsApp: o de cada contador ou um número único da plataforma? | Decidir junto com o provedor de WhatsApp, antes da F4. O número do contador é reconhecido pelo cliente; um número único é mais simples de operar | RF-16, ADR-0002 |
+| Q-17 | Com pendências, o Pix cobra o total em aberto numa cobrança só, ou um Pix por mês? | Um Pix pelo total, que dá baixa em todas as cobranças incluídas | RF-17, RN-19 |
+| Q-18 | O dinheiro do Pix cai na conta do contador no provedor ou numa conta da plataforma? | Na conta do contador (própria ou subconta), para que a plataforma nunca receba o dinheiro dos honorários | RF-17 |
 
 ---
 
@@ -744,3 +804,4 @@ Estas questões não têm resposta nas fontes e afetam regras ou comportamento. 
 | Versão | Data | Alteração |
 |---|---|---|
 | 1.0 | 07/11/2026 | Primeira versão, a partir da Documentação do Produto e do Briefing de 03/11/2026 |
+| 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), Q-02, Q-04 (ADR-0002) e Q-12 (ADR-0003). Novas RN-18 a RN-20, seção 4.3, ajuste da tabela `envios` e novas questões Q-16 a Q-18 |

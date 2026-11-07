@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.0, rascunho para validação |
+| **Versão** | 1.1, rascunho para validação |
 | **Data** | 07/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
-| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 **Legenda**
 
@@ -129,7 +129,8 @@ flowchart TD
     P3 -- "não" --> F["7 dias depois<br/>desligado por padrão"]
     F --> P4{"Pagou?"}
     P4 -- "sim" --> PAGO
-    P4 -- "não" --> G["Fim da régua<br/>segue Atrasado há N dias"]
+    P4 -- "não" --> G["Pendência<br/>segue Atrasado há N dias"]
+    G -- "entra nos lembretes do mês seguinte" --> B
     PAGO -- "mês seguinte" --> B
 ```
 
@@ -140,7 +141,29 @@ flowchart TD
 | 3 dias depois | Vencimento + 3 dias | Ligado | Cobrança que pede o comprovante |
 | 7 dias depois | Vencimento + 7 dias | Desligado | Última cobrança |
 
-**Regras:** só dispara para quem não pagou (RN-09); passo desligado é pulado; cada passo sai no máximo uma vez por cobrança e canal (RN-13, proposto). Depois do último passo ligado, a cobrança continua atrasada até ser paga. Cobranças antigas não pagas: ver Q-02.
+**Regras:** só dispara para quem não pagou (RN-09); passo desligado é pulado; cada passo sai no máximo uma vez por cliente, mês e canal (RN-13, proposto). A cobrança que não é paga no mês vira **pendência**: continua atrasada e entra nos lembretes dos meses seguintes até ser paga (RN-18, decisão da Q-02).
+
+### 4.1 Pendências de meses anteriores
+
+Decidido (Q-02): cobranças não pagas de meses anteriores aparecem no mês corrente e continuam recebendo lembretes. O mecanismo abaixo é **(proposto)** e aguarda confirmação: o cliente recebe uma mensagem só, com o mês e as pendências, para que o número de mensagens não cresça a cada mês em aberto (RN-19).
+
+```mermaid
+flowchart TD
+    A["Dia de um passo ligado da régua<br/>no mês corrente"] --> B{"Cobrança do mês<br/>está paga?"}
+    B -- "não" --> C{"Tem pendências?"}
+    C -- "não" --> D["Mensagem do passo"]
+    C -- "sim" --> E["Mensagem do passo<br/>+ pendências e total em aberto"]
+    B -- "sim" --> F{"Tem pendências?"}
+    F -- "não" --> G["Não envia"]
+    F -- "sim" --> H{"É o passo No dia?"}
+    H -- "sim" --> I["Mensagem de pendência<br/>uma vez por mês"]
+    H -- "não" --> G
+```
+
+**Exemplo de mensagem por e-mail (proposto):**
+
+> Olá, Maria! Seu honorário de novembro, de R$ 300,00, vence em 10/11. Chave Pix: [chave Pix do contador].
+> Também está em aberto: outubro (R$ 300,00). Total em aberto: R$ 600,00.
 
 ---
 
@@ -202,7 +225,9 @@ flowchart TD
     CF -- "sim" --> EX["Cliente e dados apagados"]
 ```
 
-**Requisitos:** RF-01, RF-02, RF-04, RF-05, RF-06, RN-07, RN-10, RN-14, RN-16.
+**CPF/CNPJ (F4).** Quando o provedor de Pix exigir, o cadastro do cliente pede o CPF ou o CNPJ. O dado vai direto para o provedor e não é guardado no app (ADR-0003). Ver a seção 9.
+
+**Requisitos:** RF-01, RF-02, RF-04, RF-05, RF-06, RN-07, RN-10, RN-14, RN-16, RN-20.
 
 ---
 
@@ -237,7 +262,8 @@ flowchart TD
     T3 --> P["Preenche os campos<br/>nome, mês, valor, vencimento, Pix"]
     T0 --> P
     TM --> P
-    P --> V["Prévia da mensagem"]
+    P --> PD["Acrescenta as pendências, se houver<br/>(proposto)"]
+    PD --> V["Prévia da mensagem"]
     V --> CP["Copiar"]
     CP --> EXT["Contador envia pelo<br/>WhatsApp ou e-mail dele"]
     EXT --> R["Registrar envio<br/>canal manual"]
@@ -290,15 +316,15 @@ sequenceDiagram
     participant CLI as Cliente do contador
 
     AG->>APP: dispara a rotina do dia
-    APP->>DB: busca cobranças não pagas de clientes ativos
-    loop cada cobrança e cada passo ligado
-        APP->>APP: data do passo = vencimento + dias do passo
-        alt data do passo é hoje e o passo não foi enviado
-            APP->>APP: monta a mensagem com os campos
-            APP->>CAN: envia a mensagem
-            CAN-->>CLI: lembrete com valor, vencimento e Pix
+    APP->>DB: busca clientes ativos com cobranças em aberto, do mês e de meses anteriores
+    loop cada cliente e cada passo ligado
+        APP->>APP: data do passo = vencimento do mês + dias do passo
+        alt data do passo é hoje e o passo não foi enviado neste mês
+            APP->>APP: monta uma mensagem com o mês e as pendências
+            APP->>CAN: envia (no WhatsApp, pelo modelo aprovado)
+            CAN-->>CLI: lembrete com valor, vencimento, Pix e total em aberto
             CAN-->>APP: aceito ou falhou
-            APP->>DB: registra o envio com passo, canal e status
+            APP->>DB: registra o envio e as cobranças incluídas
         else qualquer outro caso
             APP->>APP: não envia
         end
@@ -307,30 +333,37 @@ sequenceDiagram
 
 | Situação | Comportamento |
 |---|---|
-| Cliente pagou antes da rotina rodar | Não envia (RN-09) |
+| Cliente pagou o mês e não tem pendências | Não envia (RN-09) |
+| Cliente com o mês e pendências em aberto | Uma mensagem só, com o total em aberto (RN-19, proposto) |
+| Cliente pagou o mês, mas tem pendências | Envia só no passo "No dia", com o texto de pendência (RN-18, RN-19, proposto) |
 | Passo desligado | Não envia |
-| Rotina roda duas vezes no mesmo dia | Não repete o envio (RN-13, proposto) |
+| Rotina roda duas vezes no mesmo dia | Não repete o envio: um passo por cliente, mês e canal (RN-13, proposto) |
 | Cliente sem e-mail e sem telefone | Não envia; a cobrança mostra "sem contato" (RN-17, proposto) |
 | Provedor recusa a mensagem | Registra o envio como "falhou"; o contador vê a falha na cobrança (RF-35) |
 | Rotina deixou de rodar num dia | Ver Q-09 |
 
-**Requisitos:** RF-16, RF-34, RF-35, RNF-09.
+**Requisitos:** RF-16, RF-34, RF-35, RN-18, RN-19, RNF-09, ADR-0002.
 
 ---
 
 ## 9. Pagamento por Pix com baixa automática (versão final)
 
-O provedor de Pix ainda não foi escolhido (Asaas ou similar). O fluxo abaixo é **(proposto)** e independe do provedor.
+O provedor de Pix ainda não foi escolhido (Asaas ou similar). O fluxo abaixo é **(proposto)** e independe do provedor. Uma regra já está decidida: o CPF ou o CNPJ do pagador fica só no provedor, e o app guarda apenas o identificador do pagador (ADR-0003).
 
 ```mermaid
 sequenceDiagram
     autonumber
+    participant CONT as Contador
     participant APP as Agenda Contábil
     participant PSP as Provedor de Pix
     participant CLI as Cliente do contador
     participant DB as Banco de dados
 
-    APP->>PSP: cria a cobrança Pix com o valor total do mês
+    CONT->>APP: informa o CPF ou o CNPJ do cliente
+    APP->>PSP: cadastra o pagador com o documento
+    PSP-->>APP: identificador do pagador
+    APP->>DB: guarda só o identificador, nunca o documento
+    APP->>PSP: cria a cobrança Pix com o valor total em aberto
     PSP-->>APP: Pix copia e cola ou link de pagamento
     APP->>CLI: lembrete da régua com o Pix
     CLI->>PSP: paga pelo app do banco
@@ -349,9 +382,11 @@ sequenceDiagram
 | Aviso de pagamento repetido | Não gera baixa duplicada |
 | Contador dá baixa manual com o Pix em aberto | O sistema cancela a cobrança no provedor |
 | Contador muda o valor do mês com o Pix em aberto | O sistema cancela o Pix antigo e gera outro com o novo valor |
-| Provedor exige CPF ou CNPJ do pagador | Ver Q-12 |
+| Cliente sem cadastro no provedor | Sem Pix com baixa automática: a mensagem usa a chave Pix do contador e a baixa é manual (ADR-0003) |
+| Cliente com pendências | Um Pix pelo total em aberto, que dá baixa em todas as cobranças incluídas (Q-17) |
+| Em que conta o dinheiro cai | Ver Q-18 |
 
-**Requisitos:** RF-17, RNF-07, RN-09. Página do cliente para pagar: RF-60, em aberto.
+**Requisitos:** RF-17, RNF-07, RNF-16, RN-09, RN-20. Página do cliente para pagar: RF-60, em aberto.
 
 ---
 
@@ -393,7 +428,8 @@ flowchart TD
     A["Aba Régua de cobrança"] --> B["Informar a chave Pix"]
     A --> C["Escolher um dos 4 passos"]
     C --> D["Ligar ou desligar"]
-    C --> E["Editar o texto<br/>com os campos nome, mês, valor, vencimento e Pix"]
+    C --> E["Editar o texto do e-mail<br/>com os campos nome, mês, valor, vencimento e Pix"]
+    C --> W["Prévia do WhatsApp<br/>modelo fixo, sem edição"]
     E --> F["Prévia com um cliente de exemplo"]
     D --> G["Salvar"]
     F --> G
@@ -401,9 +437,9 @@ flowchart TD
     G --> H["Próximo lembrete de cada cobrança<br/>recalculado pela RN-04"]
 ```
 
-No texto, os campos são escritos entre chaves: `{nome}`, `{mes}`, `{valor}`, `{venc}` e `{pix}`. No WhatsApp, só é possível enviar modelos aprovados pela Meta: ver Q-04.
+No texto do e-mail, os campos são escritos entre chaves: `{nome}`, `{mes}`, `{valor}`, `{venc}` e `{pix}`. No WhatsApp, o texto é um modelo fixo aprovado na Meta: a aba mostra só a prévia, com os mesmos campos preenchidos (ADR-0002).
 
-**Requisitos:** RF-30, RF-31, RF-32, RF-33, RN-04, RN-05, RN-08.
+**Requisitos:** RF-30, RF-31, RF-32, RF-33, RN-04, RN-05, RN-08, ADR-0002.
 
 ---
 
@@ -436,7 +472,7 @@ flowchart LR
     C --> E["Voltar ao mês corrente"]
 ```
 
-**Requisitos:** RF-18. Cobranças antigas não pagas no mês corrente: ver Q-02.
+**Requisitos:** RF-18, RN-18. Cobranças de meses anteriores não pagas também aparecem no mês corrente e continuam recebendo lembretes (seção 4.1).
 
 ---
 
@@ -471,6 +507,8 @@ flowchart TD
 | Cliente pagou, mas o contador ainda não marcou | O lembrete pode sair. Mitigação: baixa automática por Pix; **(proposto)** texto com "se já pagou, desconsidere" | RF-17, RN-09 |
 | Aviso de pagamento Pix repetido | Uma baixa só | RF-17 (proposto) |
 | Valor pago diferente do esperado | Cobrança marcada para revisão | Q-13 |
+| Cliente sem CPF/CNPJ no provedor de Pix | Lembrete com a chave Pix do contador; baixa manual | ADR-0003 |
+| Cliente com vários meses em aberto | Uma mensagem por dia e canal, com o total em aberto | RN-19 (proposto) |
 | Contador desfaz um pagamento | Status recalculado; a régua volta para os passos futuros | RF-12 |
 | Todos os passos da régua desligados | "Sem próximos lembretes" na cobrança | RF-15 (proposto) |
 | Campo desconhecido no texto da régua | Aviso antes de salvar | RF-32 (proposto) |
@@ -486,12 +524,12 @@ flowchart TD
 | Mapa de telas | 1 | RF-01, RF-03, RF-10 a RF-24, RF-30 a RF-33, RNF-01, RNF-02 |
 | Primeiro acesso | 2 | RF-40, RF-42, RF-43, RF-20, RF-30, RF-01 |
 | Rotina mensal do contador | 3 | RF-01, RF-12, RF-13, RF-21, RF-31, RF-33 |
-| Ciclo mensal de cobrança | 4 | RF-30, RF-34, RN-08, RN-09, RN-13 |
+| Ciclo mensal de cobrança e pendências | 4 | RF-18, RF-30, RF-34, RN-08, RN-09, RN-13, RN-18, RN-19 |
 | Estados da cobrança | 5 | RF-10, RF-12, RN-02 |
 | Cadastro de cliente | 6 | RF-01, RF-02, RF-04 a RF-06, RN-07, RN-10, RN-14 |
 | Cobranças | 7 | RF-10 a RF-15, RN-01, RN-03 |
 | Rotina diária | 8 | RF-16, RF-34, RF-35, RNF-09 |
-| Pix com baixa automática | 9 | RF-17, RNF-07 |
+| Pix com baixa automática | 9 | RF-17, RNF-07, RNF-16, RN-20 |
 | Obrigações | 10 | RF-20 a RF-22, RF-24, RN-06, RN-10 |
 | Régua de cobrança | 11 | RF-30 a RF-33, RN-04, RN-05 |
 | Calendário fiscal | 12 | RF-23, RNF-11 |
@@ -505,3 +543,4 @@ flowchart TD
 | Versão | Data | Alteração |
 |---|---|---|
 | 1.0 | 07/11/2026 | Primeira versão, a partir do User Flow da Documentação do Produto e do Briefing de 03/11/2026 |
+| 1.1 | 07/11/2026 | Pendências de meses anteriores (seção 4.1), rotina diária por cliente, Pix com CPF/CNPJ só no provedor e régua com WhatsApp fixo |
