@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.3, rascunho para validação |
+| **Versão** | 1.4, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -75,7 +75,7 @@ O glossário completo está no [PRD](./PRD.md), seção 14. Os termos abaixo tê
 
 | | Protótipo (hoje) | Versão final |
 |---|---|---|
-| Tecnologia | Página HTML com JavaScript puro, sem biblioteca | Next.js com Supabase (Postgres e Auth) (ADR-0001) |
+| Tecnologia | Página HTML com JavaScript puro, sem biblioteca | Next.js em TypeScript, hospedado na Cloudflare, com Supabase (Postgres e Auth) em São Paulo (ADR-0001, ADR-0006) |
 | Dados | Objeto salvo no navegador (chave de armazenamento com o nome antigo "Prazo Certo") | No servidor, por conta de contador, acessíveis do celular e do computador |
 | Clientes | De exemplo | Reais, cadastrados pelo contador |
 | Envio de cobrança | Simulado: mensagem pronta para copiar | E-mail e WhatsApp automáticos, pela régua |
@@ -147,7 +147,7 @@ flowchart LR
 
 ### 2.6 Premissas e dependências
 
-- **Stack decidida (ADR-0001):** Next.js (React) na interface e nas rotas de servidor; Supabase para o banco (Postgres) e o login (Auth). A rotina diária roda no Supabase Cron, em duas etapas (ADR-0005). As integrações (e-mail primeiro, depois WhatsApp pela API oficial e Pix por um provedor como o Asaas) terão ADRs próprias.
+- **Stack decidida (ADR-0001, ADR-0006):** Next.js (React) em TypeScript na interface e nas rotas de servidor, hospedado na Cloudflare (Workers, com o adaptador OpenNext); Supabase para o banco (Postgres) e o login (Auth), na região de São Paulo. A rotina diária roda no Supabase Cron, em duas etapas (ADR-0005). As integrações (e-mail primeiro, depois WhatsApp pela API oficial e Pix por um provedor como o Asaas) terão ADRs próprias.
 - O app não guarda CPF nem CNPJ dos clientes; quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 - O contador tem uma chave Pix.
 - Os clientes têm e-mail ou celular para receber os lembretes.
@@ -779,7 +779,7 @@ erDiagram
 | RNF-09 | Confiabilidade | A rotina diária pode rodar de novo sem enviar mensagens repetidas (RN-13); falhas ficam registradas e visíveis; há alerta se a rotina não rodar (ADR-0005) | A fazer | F3 | Proposto |
 | RNF-10 | Desempenho | A tela principal carrega em até 2 segundos numa conexão 4G, com até 300 clientes (meta a validar) | A fazer | F2 | Proposto |
 | RNF-11 | Manutenibilidade | Obrigações e datas são dados configuráveis e não exigem nova versão do código para mudar | A fazer | F2 (dados), F5 (tela) | Briefing, Proposto |
-| RNF-12 | Continuidade | Backup diário do banco, com retenção mínima de 7 dias | A fazer | F2 | Proposto |
+| RNF-12 | Continuidade | Backup diário do banco, com retenção mínima de 7 dias. Exige o plano pago do Supabase em produção (ADR-0006) | A fazer | F2 | Proposto |
 | RNF-13 | Acessibilidade | Fluxos principais conformes com WCAG 2.1 AA, inclusive contraste nos dois temas | A fazer | F2 | Proposto |
 | RNF-14 | Entregabilidade | E-mails enviados de domínio autenticado (SPF, DKIM e DMARC) | A fazer | F3 | Proposto |
 | RNF-15 | Auditoria | Registrar quem fez e quando: baixa manual, desfazer baixa e mudança de honorário | A fazer | F2 | Proposto |
@@ -839,6 +839,7 @@ erDiagram
 | Q-12 | O provedor de Pix exige o CPF ou CNPJ do pagador? | O app não guarda CPF nem CNPJ em nenhuma hipótese. Quando o provedor exigir, o dado vai direto para ele, e o app guarda só o identificador do pagador | 07/11/2026 | ADR-0003, RN-20 |
 | — | Isolamento dos dados entre contadores | RLS em todas as tabelas, `contador_id` em todas as tabelas de dados, chaves estrangeiras compostas e testes com dois contadores | 09/11/2026 | ADR-0004 |
 | — | Rotina diária | Supabase Cron em duas etapas: planejar no banco e enviar por Edge Function, com a tabela `envios` como fila | 09/11/2026 | ADR-0005 |
+| — | Hospedagem, região e linguagem | Next.js na Cloudflare (Workers, adaptador OpenNext), Supabase em São Paulo, TypeScript | 09/11/2026 | ADR-0006 |
 | Q-01 | Cliente cadastrado depois do dia de vencimento do mês | O cadastro pergunta se a cobrança começa neste mês ou no próximo; o padrão é o próximo | 09/11/2026 | RN-21, RF-01 |
 | Q-03 | A mensagem manual usa o texto de um passo desligado? | Sim: desligar um passo só impede o envio automático | 09/11/2026 | RN-03, RF-14 |
 | Q-05 | Por qual canal cada cliente recebe? | Todos os canais com contato cadastrado, com opção de escolher por cliente | 09/11/2026 | RF-05, RF-16 |
@@ -872,3 +873,4 @@ O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confi
 | 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), Q-02, Q-04 (ADR-0002) e Q-12 (ADR-0003). Novas RN-18 a RN-20, seção 4.3, ajuste da tabela `envios` e novas questões Q-16 a Q-18 |
 | 1.2 | 09/11/2026 | Isolamento por RLS (ADR-0004) no modelo de dados; decisões das questões Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15; novas RN-21 a RN-23; tabela `obrigacoes_padrao`; correção da seção 4.3 para passos que caem em outro mês |
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas (ADR-0005): novos status de envio, novas tentativas, tabela `rotina_execucoes` |
+| 1.4 | 09/11/2026 | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |

@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.3, rascunho para validação |
+| **Versão** | 1.4, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -230,7 +230,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 - **LGPD.** O sistema guarda nome, valores e situação fiscal de terceiros. Precisa de login seguro e de consentimento.
 - **Regras fiscais mudam.** Datas e obrigações devem ser fáceis de atualizar e conferidas por um contador.
 - **Experiência.** Tudo em português, valores em reais, funcionando no celular, mantendo o visual do protótipo.
-- **Tecnologia.** Next.js e Supabase (Postgres e Auth), decididos em 07/11/2026 (ADR-0001).
+- **Tecnologia.** Next.js em TypeScript, hospedado na Cloudflare, e Supabase (Postgres e Auth) na região de São Paulo (ADR-0001, ADR-0006).
 - **Documentos dos clientes.** O app não guarda CPF nem CNPJ. Quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 
 ### 10.3 Premissas (proposto)
@@ -255,6 +255,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Dependência de provedores de Pix, WhatsApp e e-mail | Troca de provedor cara, ou indisponibilidade | **(proposto)** Isolar cada integração no código; escolher os provedores na documentação técnica |
 | Expectativa de que o app calcule impostos | Frustração e risco de responsabilidade | Comunicação clara no produto e na venda (RN-12) |
 | Preço que não sustenta o negócio | Inviabilidade | Medir quanto o contador pagaria na F1 |
+| Planos gratuitos insuficientes em produção | Erros por limite de CPU na Cloudflare; projeto pausado ou sem backup no Supabase | Prever os planos pagos da Cloudflare (Workers) e do Supabase antes de contadores usarem dados reais (ADR-0006) |
 
 ---
 
@@ -270,6 +271,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | CPF e CNPJ dos clientes | Nunca gravados no app; ficam só no provedor de Pix | 07/11/2026 | ADR-0003 |
 | Isolamento dos dados entre contadores | Garantido no banco, com RLS em todas as tabelas e testes com dois contadores | 09/11/2026 | ADR-0004 |
 | Rotina diária | Supabase Cron em duas etapas: planejar no banco às 9h e enviar em lotes, sem duplicar mensagens | 09/11/2026 | ADR-0005 |
+| Hospedagem e região | Next.js na Cloudflare (o plano gratuito da Vercel não permite uso comercial); Supabase em São Paulo; TypeScript | 09/11/2026 | ADR-0006 |
 | Questões de regra Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15 | Adotadas as sugestões do SRS (por exemplo: lembretes às 9h, inativar cliente por padrão, competência mostrada nas obrigações) | 09/11/2026 | SRS, seção 9.1 |
 
 ### 12.2 Decisões em aberto
@@ -345,3 +347,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), pendências de meses anteriores (Q-02), WhatsApp com modelos fixos (ADR-0002) e CPF/CNPJ só no provedor (ADR-0003) |
 | 1.2 | 09/11/2026 | Decisões: isolamento por RLS (ADR-0004) e questões de regra adotadas conforme o SRS |
 | 1.3 | 09/11/2026 | Decisão: rotina diária com Supabase Cron (ADR-0005) |
+| 1.4 | 09/11/2026 | Decisão: hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |

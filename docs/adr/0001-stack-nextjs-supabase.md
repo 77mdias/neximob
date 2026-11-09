@@ -16,7 +16,7 @@
 | Parte | Escolha |
 |---|---|
 | Interface | **Next.js (React).** As telas do protótipo são reescritas como componentes, mantendo o visual |
-| Servidor | **Rotas de servidor do Next.js**, para as ações que usam chaves secretas e para receber os avisos dos provedores (webhooks) |
+| Servidor | **Rotas de servidor do Next.js**, para as ações que usam chaves secretas e para receber os avisos dos provedores (webhooks). O local dos webhooks será revisto na ADR das integrações (ver ADR-0006) |
 | Banco de dados | **Postgres do Supabase**, com o modelo lógico do SRS (seção 5) |
 | Login | **Supabase Auth**, com login por e-mail |
 | Isolamento entre contadores | Políticas de acesso do Postgres (RLS). Detalhes numa ADR própria |
@@ -42,11 +42,13 @@
 - A chave de serviço do Supabase ignora as políticas de acesso. Ela só pode ser usada no servidor, nunca no navegador.
 - Backups e limites dependem do plano contratado. Conferir o plano antes da F2 para cumprir a RNF-12.
 
-## Pontos para as próximas ADRs
+## Pontos que ficaram para as ADRs seguintes
 
-| Ponto | Sugestão |
+| Ponto | Decisão |
 |---|---|
-| Hospedagem do Next.js | Vercel, pela integração nativa com o Next.js |
-| Região do Supabase | São Paulo, perto dos usuários |
-| Linguagem | TypeScript, para tipar o modelo de dados de ponta a ponta |
-| Isolamento, rotina diária e integrações | Uma ADR para cada |
+| Hospedagem do Next.js | Cloudflare Workers, com o adaptador OpenNext (ADR-0006). A sugestão inicial, Vercel, foi descartada porque o plano gratuito não permite uso comercial |
+| Região do Supabase | São Paulo (ADR-0006) |
+| Linguagem | TypeScript (ADR-0006) |
+| Isolamento entre contadores | RLS (ADR-0004) |
+| Rotina diária | Supabase Cron em duas etapas (ADR-0005) |
+| Integrações (e-mail, WhatsApp, Pix) | Em aberto |

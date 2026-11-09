@@ -9,8 +9,9 @@ Cada decisão de arquitetura ou de produto com impacto técnico fica registrada 
 | [0003](./0003-cpf-cnpj-so-no-provedor.md) | CPF e CNPJ dos clientes ficam só no provedor de Pix | Aceita | 07/11/2026 |
 | [0004](./0004-isolamento-por-contador-rls.md) | Isolamento dos dados entre contadores com RLS | Aceita | 09/11/2026 |
 | [0005](./0005-rotina-diaria-supabase-cron.md) | Rotina diária com Supabase Cron, em duas etapas | Aceita | 09/11/2026 |
+| [0006](./0006-hospedagem-cloudflare-supabase-sao-paulo.md) | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript | Aceita | 09/11/2026 |
 
-**Próximas decisões:** hospedagem, região e linguagem (pendentes da ADR-0001), integrações (e-mail, WhatsApp, Pix) e esquema físico do banco.
+**Próximas decisões:** integrações (e-mail, WhatsApp, Pix) e esquema físico do banco.
 
 ## Status
 
