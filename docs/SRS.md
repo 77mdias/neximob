@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.4, rascunho para validação |
+| **Versão** | 1.5, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -264,6 +264,7 @@ Quatro cards no topo da tela, calculados para o mês de referência:
 - Campos opcionais no cadastro, usados para enviar a cobrança.
 - **(proposto)** E-mail com formato válido. Telefone celular brasileiro com DDD, guardado no formato internacional (+55...).
 - **(proposto)** Cliente sem nenhum contato não recebe envio automático e aparece com o aviso "sem contato" na lista (RN-17). A mensagem pronta para copiar (RF-14) continua disponível.
+- **(proposto)** E-mail que voltou (devolução definitiva) ou que o cliente marcou como spam fica sinalizado no cadastro e deixa de receber lembretes automáticos até o contador corrigir o endereço (RN-24, ADR-0007).
 - Por padrão, o cliente recebe os lembretes por todos os canais com contato cadastrado. O contador pode desligar um canal para um cliente específico (Q-05).
 
 #### RF-06 · Inativar e reativar cliente
@@ -341,7 +342,7 @@ Cada cobrança mostra um status, calculado pela RN-02:
 |---|---|---|
 | Disparo | Rotina diária (RF-34) | Rotina diária (RF-34) |
 | Conteúdo | Texto do passo da régua, editável pelo contador, com os campos preenchidos | Modelo fixo da plataforma, aprovado na Meta, com os campos como variáveis. O contador não edita o texto (ADR-0002) |
-| Requisitos do canal | **(proposto)** Remetente com o nome do contador e resposta para o e-mail dele | API oficial; **(proposto)** consentimento (opt-in) do cliente para receber mensagens |
+| Requisitos do canal | Resend (ADR-0007). Remetente no domínio da plataforma, com o nome do contador, e resposta (Reply-To) para o e-mail do contador | API oficial; **(proposto)** consentimento (opt-in) do cliente para receber mensagens |
 | Registro | Cada tentativa gera um envio (RF-35) | Cada tentativa gera um envio (RF-35) |
 
 Cada mensagem leva a cobrança do mês e as pendências de meses anteriores, se houver. O cliente recebe no máximo uma mensagem por dia em cada canal (RN-18, RN-19).
@@ -489,7 +490,7 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 #### RF-35 · Registro dos envios
 
 - Cada envio guarda: cliente, mês da régua, passo, canal (e-mail, WhatsApp ou manual), data e hora, status e as cobranças incluídas na mensagem.
-- Status (ADR-0005): `pendente`, `enviando`, `enviado`, `falhou`, `pulado` (passo que ficou para trás, RN-22), `cancelado` (cobrança paga antes do envio) e, quando o provedor informar, `entregue` e `lido`.
+- Status (ADR-0005): `pendente`, `enviando`, `enviado`, `falhou`, `pulado` (passo que ficou para trás, RN-22), `cancelado` (cobrança paga antes do envio) e, quando o provedor informar, `entregue` e `lido`. No e-mail, os avisos do Resend mudam o envio para `entregue` ou, em caso de devolução ou spam, para `falhou` (ADR-0007).
 - **(proposto)** Erro temporário gera até 3 novas tentativas. Erro definitivo (endereço inválido, número inexistente) fica como `falhou` na hora.
 - O contador vê os envios de cada cobrança. **(proposto)** Envios com falha aparecem em destaque.
 
@@ -499,6 +500,7 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 
 - O contador cria a conta e entra com o e-mail.
 - **(proposto)** O método (senha ou link mágico por e-mail) fica para a documentação técnica. Exige confirmação do e-mail.
+- Os e-mails de login são enviados pelo Supabase Auth através do SMTP do Resend (ADR-0007).
 
 #### RF-41 · Uma conta por contador
 
@@ -570,6 +572,7 @@ As regras marcadas como **invioláveis** estão na seção 6 do Briefing e não 
 | RN-21 | Cliente cadastrado depois do dia de vencimento do mês corrente: o contador escolhe se a cobrança começa neste mês (já atrasada) ou no próximo; o padrão é o próximo. As obrigações entram no checklist desde o mês do cadastro | Não | Decisão (Q-01) | RF-01, RF-02 |
 | RN-22 | Se a rotina diária deixar de rodar, a execução seguinte envia, para cada cliente, só o passo mais recente que ficou para trás; os anteriores ficam registrados como pulados | Não | Decisão (Q-09) | RF-34, RF-35 |
 | RN-23 | A obrigação é rotulada pelo vencimento e mostra a competência: mês anterior para DAS-MEI e DAS; ano anterior para DEFIS, DASN-SIMEI e IRPF | Não | Decisão (Q-07) | RF-20, RF-21, RF-23 |
+| RN-24 | E-mail devolvido de forma definitiva ou marcado como spam deixa de receber lembretes automáticos até o contador corrigir o endereço | Não | Proposto (ADR-0007) | RF-05, RF-34, RF-35 |
 
 ### 4.1 Detalhe da RN-02 (status)
 
@@ -668,6 +671,7 @@ erDiagram
         date cobranca_inicio "mês da primeira cobrança"
         text telefone
         text email
+        text email_situacao "ok, devolvido ou spam"
         text canais "email, whatsapp"
         boolean ativo
         text provedor_cliente_id "ID do pagador no provedor de Pix"
@@ -750,7 +754,7 @@ erDiagram
 | Tabela | Campos principais (fonte) | Restrições e campos acrescentados |
 |---|---|---|
 | `contadores` | id, nome, e-mail, chave Pix, plano | `id` é o id do usuário no Supabase Auth (ADR-0004). E-mail único. Acrescentar **(proposto)**: data do aceite dos termos e versão aceita (RF-43), data de criação |
-| `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentados: `cobranca_inicio`, mês da primeira cobrança (RN-21); `canais`, canais de envio, por padrão todos com contato (Q-05); `provedor_cliente_id`, identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
+| `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentados: `cobranca_inicio`, mês da primeira cobrança (RN-21); `canais`, canais de envio, por padrão todos com contato (Q-05); **(proposto)** `email_situacao`, atualizada pelos avisos do Resend (RN-24); `provedor_cliente_id`, identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
 | `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentar **(proposto)**: identificador da cobrança no provedor de Pix (RF-17) |
 | `envios` | id, cobrança, passo da régua, canal, enviado em, status | Ajustado pela Q-02: o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. É também a fila da rotina (ADR-0005): um registro por cliente, mês, passo e canal automático, garantido por chave única (RN-13); as novas tentativas atualizam o mesmo registro. Acrescentados: `tentativas`, `proxima_tentativa_em`, `erro` e o identificador da mensagem no provedor |
 | `envio_cobrancas` | Tabela nova | Liga cada envio às cobranças que ele lembrou: a do mês e as pendências (RN-19) |
@@ -781,7 +785,7 @@ erDiagram
 | RNF-11 | Manutenibilidade | Obrigações e datas são dados configuráveis e não exigem nova versão do código para mudar | A fazer | F2 (dados), F5 (tela) | Briefing, Proposto |
 | RNF-12 | Continuidade | Backup diário do banco, com retenção mínima de 7 dias. Exige o plano pago do Supabase em produção (ADR-0006) | A fazer | F2 | Proposto |
 | RNF-13 | Acessibilidade | Fluxos principais conformes com WCAG 2.1 AA, inclusive contraste nos dois temas | A fazer | F2 | Proposto |
-| RNF-14 | Entregabilidade | E-mails enviados de domínio autenticado (SPF, DKIM e DMARC) | A fazer | F3 | Proposto |
+| RNF-14 | Entregabilidade | E-mails enviados de domínio autenticado (SPF, DKIM e DMARC), com rastreamento de abertura e clique desligado (ADR-0007) | A fazer | F3 | Proposto |
 | RNF-15 | Auditoria | Registrar quem fez e quando: baixa manual, desfazer baixa e mudança de honorário | A fazer | F2 | Proposto |
 | RNF-16 | Privacidade | Coletar só os dados necessários. CPF e CNPJ nunca são gravados: vão direto ao provedor de Pix e não aparecem no banco, em logs, em relatórios de erro, em ferramentas de análise nem no navegador. Coberto por teste (ADR-0003) | A fazer | F2 (coleta mínima), F4 (CPF/CNPJ) | Decisão (Q-12) |
 
@@ -794,7 +798,7 @@ erDiagram
 | **Interface do usuário** | F2 | Tela única: topo (mês de referência e + Novo cliente), resumo do mês e abas Cobranças, Obrigações e Régua de cobrança. Detalhes no [Mapa de fluxo](./Mapa%20de%20fluxo.md) | RF-01 a RF-35, RNF-01, RNF-02 |
 | **Autenticação** | F2 | Login por e-mail com Supabase Auth (ADR-0001) | RF-40 a RF-45 |
 | **Agendador** | F3 | Supabase Cron: planejamento às 9h de Brasília e envio em lotes a cada poucos minutos (ADR-0005) | RF-34, RNF-09 |
-| **Provedor de e-mail** | F3 | Envio transacional dos lembretes. **(proposto)** Recebimento do status de entrega e devolução | RF-16, RF-35, RNF-14 |
+| **Provedor de e-mail** | F2 (login), F3 (lembretes) | Resend (ADR-0007): SMTP para os e-mails de login do Supabase Auth; API para os lembretes, com chave de idempotência; avisos de entrega, devolução e spam | RF-16, RF-35, RF-40, RNF-14 |
 | **WhatsApp (API oficial)** | F4 | Envio dos modelos fixos aprovados (ADR-0002); recebimento do status de entrega e leitura | RF-16, RF-35, RNF-04 |
 | **Provedor de Pix** | F4 | Cadastrar o pagador com CPF ou CNPJ, guardados só no provedor (ADR-0003); criar e cancelar cobrança Pix; receber o aviso de pagamento | RF-17, RNF-07, RNF-16 |
 | **Cobrança da assinatura** | F5 | Cobrança recorrente do plano do contador | RF-50 |
@@ -840,6 +844,7 @@ erDiagram
 | — | Isolamento dos dados entre contadores | RLS em todas as tabelas, `contador_id` em todas as tabelas de dados, chaves estrangeiras compostas e testes com dois contadores | 09/11/2026 | ADR-0004 |
 | — | Rotina diária | Supabase Cron em duas etapas: planejar no banco e enviar por Edge Function, com a tabela `envios` como fila | 09/11/2026 | ADR-0005 |
 | — | Hospedagem, região e linguagem | Next.js na Cloudflare (Workers, adaptador OpenNext), Supabase em São Paulo, TypeScript | 09/11/2026 | ADR-0006 |
+| — | Provedor de e-mail | Resend, para os e-mails de login (SMTP) e para os lembretes (API) | 09/11/2026 | ADR-0007 |
 | Q-01 | Cliente cadastrado depois do dia de vencimento do mês | O cadastro pergunta se a cobrança começa neste mês ou no próximo; o padrão é o próximo | 09/11/2026 | RN-21, RF-01 |
 | Q-03 | A mensagem manual usa o texto de um passo desligado? | Sim: desligar um passo só impede o envio automático | 09/11/2026 | RN-03, RF-14 |
 | Q-05 | Por qual canal cada cliente recebe? | Todos os canais com contato cadastrado, com opção de escolher por cliente | 09/11/2026 | RF-05, RF-16 |
@@ -874,3 +879,4 @@ O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confi
 | 1.2 | 09/11/2026 | Isolamento por RLS (ADR-0004) no modelo de dados; decisões das questões Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15; novas RN-21 a RN-23; tabela `obrigacoes_padrao`; correção da seção 4.3 para passos que caem em outro mês |
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas (ADR-0005): novos status de envio, novas tentativas, tabela `rotina_execucoes` |
 | 1.4 | 09/11/2026 | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
+| 1.5 | 09/11/2026 | E-mail com o Resend (ADR-0007); nova RN-24 e campo `email_situacao` |

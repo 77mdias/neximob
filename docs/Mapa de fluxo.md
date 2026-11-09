@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.3, rascunho para validação |
+| **Versão** | 1.4, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -351,6 +351,7 @@ sequenceDiagram
 | Cliente sem e-mail e sem telefone | Não envia; a cobrança mostra "sem contato" (RN-17, proposto) |
 | Provedor fora do ar ou com limite de envio | Nova tentativa mais tarde, até 3 vezes (proposto, ADR-0005) |
 | Provedor recusa a mensagem (endereço inválido, número inexistente) | Registra o envio como "falhou", sem nova tentativa; o contador vê a falha na cobrança (RF-35) |
+| E-mail volta depois de aceito, ou o cliente marca como spam | O aviso do Resend muda o envio para "falhou"; o e-mail do cliente fica sinalizado e para de receber lembretes automáticos até o contador corrigir (RN-24, proposto) |
 | Fila não terminou até as 20h | O restante sai no dia seguinte, a partir das 9h (proposto, ADR-0005) |
 | Passo que cai em outro mês | O "3 dias antes" de quem vence no dia 2 sai no fim do mês anterior; o "7 dias depois" de quem vence no dia 28 sai no início do mês seguinte (SRS, seção 4.3) |
 | Rotina deixou de rodar em algum dia | A execução seguinte envia só o passo mais recente de cada cliente; os anteriores ficam como "pulado" (RN-22) |
@@ -522,6 +523,7 @@ flowchart TD
 | Campo obrigatório vazio no cadastro | Não salva e indica o campo | RF-01 |
 | Cliente sem e-mail e sem telefone | Sem envio automático; aviso "sem contato"; a mensagem para copiar continua disponível | RN-17 (proposto) |
 | Envio recusado pelo provedor | Envio registrado como "falhou" e destacado na cobrança | RF-35 |
+| E-mail devolvido ou marcado como spam | E-mail do cliente sinalizado no cadastro; sem lembretes automáticos por e-mail até a correção | RN-24 (proposto), ADR-0007 |
 | Cliente pagou, mas o contador ainda não marcou | O lembrete pode sair. Mitigação: baixa automática por Pix; **(proposto)** texto com "se já pagou, desconsidere" | RF-17, RN-09 |
 | Aviso de pagamento Pix repetido | Uma baixa só | RF-17 (proposto) |
 | Valor pago diferente do esperado | Cobrança marcada para revisão | Q-13 |
@@ -564,3 +566,4 @@ flowchart TD
 | 1.1 | 07/11/2026 | Pendências de meses anteriores (seção 4.1), rotina diária por cliente, Pix com CPF/CNPJ só no provedor e régua com WhatsApp fixo |
 | 1.2 | 09/11/2026 | Início da cobrança no cadastro (RN-21), canais por cliente, rotina às 9h com passos que caem em outro mês e recuperação (RN-22), competência das obrigações (RN-23) e calendário padrão da plataforma |
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas, planejar e enviar (ADR-0005) |
+| 1.4 | 09/11/2026 | E-mail devolvido ou marcado como spam (RN-24, ADR-0007) |

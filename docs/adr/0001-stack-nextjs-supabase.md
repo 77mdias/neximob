@@ -51,4 +51,4 @@
 | Linguagem | TypeScript (ADR-0006) |
 | Isolamento entre contadores | RLS (ADR-0004) |
 | Rotina diária | Supabase Cron em duas etapas (ADR-0005) |
-| Integrações (e-mail, WhatsApp, Pix) | Em aberto |
+| Integrações | E-mail: Resend (ADR-0007). WhatsApp e Pix: em aberto |

@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.4, rascunho para validação |
+| **Versão** | 1.5, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -272,6 +272,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Isolamento dos dados entre contadores | Garantido no banco, com RLS em todas as tabelas e testes com dois contadores | 09/11/2026 | ADR-0004 |
 | Rotina diária | Supabase Cron em duas etapas: planejar no banco às 9h e enviar em lotes, sem duplicar mensagens | 09/11/2026 | ADR-0005 |
 | Hospedagem e região | Next.js na Cloudflare (o plano gratuito da Vercel não permite uso comercial); Supabase em São Paulo; TypeScript | 09/11/2026 | ADR-0006 |
+| Provedor de e-mail | Resend, para os e-mails de login e para os lembretes | 09/11/2026 | ADR-0007 |
 | Questões de regra Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15 | Adotadas as sugestões do SRS (por exemplo: lembretes às 9h, inativar cliente por padrão, competência mostrada nas obrigações) | 09/11/2026 | SRS, seção 9.1 |
 
 ### 12.2 Decisões em aberto
@@ -283,9 +284,8 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Provedor de WhatsApp | API oficial direta ou provedor parceiro | Antes da F4 |
 | Número do WhatsApp | O número de cada contador ou um número único da plataforma (SRS, Q-16) | Antes da F4 |
 | Conta do Pix | O dinheiro cai na conta do contador ou numa conta da plataforma (SRS, Q-18) | Antes da F4 |
-| Provedor de e-mail **(proposto)** | Serviço de e-mail transacional | Antes da F3 |
 | Página do cliente | Se o cliente do contador terá uma página para ver e pagar o honorário | Antes da F4 |
-| Nome final | Os documentos usam "Agenda Contábil", o protótipo ainda usa "Prazo Certo" na chave de armazenamento e o repositório se chama `neximob` | **(proposto)** Antes da F2, para o código novo já nascer com o nome final |
+| Nome final e domínio | Os documentos usam "Agenda Contábil", o protótipo ainda usa "Prazo Certo" na chave de armazenamento e o repositório se chama `neximob`. O nome define também o domínio de onde saem os e-mails (ADR-0007) | **(proposto)** Antes da F2, para o código novo já nascer com o nome final e o domínio estar autenticado antes da F3 |
 | Fase do histórico (RF-18) | As fontes listam o item, mas não o colocam em nenhuma fase | Planejamento da F3 |
 | Mais de um usuário por escritório | Na F2, uma conta por contador (Q-14); reavaliar com o resultado da validação | Depois da F1 |
 | Mecanismo das pendências | Proposto: uma mensagem por dia e canal, com o mês e o total em aberto (SRS, RN-19) | Antes da F3 |
@@ -348,3 +348,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | 1.2 | 09/11/2026 | Decisões: isolamento por RLS (ADR-0004) e questões de regra adotadas conforme o SRS |
 | 1.3 | 09/11/2026 | Decisão: rotina diária com Supabase Cron (ADR-0005) |
 | 1.4 | 09/11/2026 | Decisão: hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
+| 1.5 | 09/11/2026 | Decisão: e-mail com o Resend (ADR-0007) |
