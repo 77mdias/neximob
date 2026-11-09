@@ -7,8 +7,9 @@ Cada decisão de arquitetura ou de produto com impacto técnico fica registrada 
 | [0001](./0001-stack-nextjs-supabase.md) | Stack: Next.js + Supabase | Aceita | 07/11/2026 |
 | [0002](./0002-whatsapp-modelos-fixos.md) | WhatsApp com modelos fixos aprovados; texto livre só no e-mail | Aceita | 07/11/2026 |
 | [0003](./0003-cpf-cnpj-so-no-provedor.md) | CPF e CNPJ dos clientes ficam só no provedor de Pix | Aceita | 07/11/2026 |
+| [0004](./0004-isolamento-por-contador-rls.md) | Isolamento dos dados entre contadores com RLS | Aceita | 09/11/2026 |
 
-**Próximas decisões:** isolamento de dados entre contadores, rotina diária, integrações (e-mail, WhatsApp, Pix), esquema físico do banco, hospedagem e região.
+**Próximas decisões:** rotina diária, integrações (e-mail, WhatsApp, Pix), esquema físico do banco, hospedagem e região.
 
 ## Status
 

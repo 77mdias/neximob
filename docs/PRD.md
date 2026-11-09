@@ -6,8 +6,8 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.1, rascunho para validação |
-| **Data** | 07/11/2026 |
+| **Versão** | 1.2, rascunho para validação |
+| **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
@@ -166,7 +166,7 @@ Ainda não há metas numéricas. Elas devem sair da validação com contadores (
 ### 7.4 Em aberto
 
 - Página para o cliente do contador ver e pagar o honorário (RF-60).
-- Mais de um usuário na mesma conta de escritório. Hoje o modelo é uma conta por contador.
+- Mais de um usuário na mesma conta de escritório. Na F2, vale uma conta por contador; o tema volta depois da validação (SRS, Q-14).
 
 ---
 
@@ -268,6 +268,8 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Cobranças de meses anteriores | Aparecem no mês corrente e continuam recebendo lembretes até serem pagas | 07/11/2026 | SRS: RN-18, Q-02 |
 | Texto das mensagens | Texto livre só no e-mail; no WhatsApp, modelos fixos aprovados na Meta | 07/11/2026 | ADR-0002 |
 | CPF e CNPJ dos clientes | Nunca gravados no app; ficam só no provedor de Pix | 07/11/2026 | ADR-0003 |
+| Isolamento dos dados entre contadores | Garantido no banco, com RLS em todas as tabelas e testes com dois contadores | 09/11/2026 | ADR-0004 |
+| Questões de regra Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15 | Adotadas as sugestões do SRS (por exemplo: lembretes às 9h, inativar cliente por padrão, competência mostrada nas obrigações) | 09/11/2026 | SRS, seção 9.1 |
 
 ### 12.2 Decisões em aberto
 
@@ -282,7 +284,8 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Página do cliente | Se o cliente do contador terá uma página para ver e pagar o honorário | Antes da F4 |
 | Nome final | Os documentos usam "Agenda Contábil", o protótipo ainda usa "Prazo Certo" na chave de armazenamento e o repositório se chama `neximob` | **(proposto)** Antes da F2, para o código novo já nascer com o nome final |
 | Fase do histórico (RF-18) | As fontes listam o item, mas não o colocam em nenhuma fase | Planejamento da F3 |
-| Mais de um usuário por escritório | Hoje é uma conta por contador | Validação (F1) |
+| Mais de um usuário por escritório | Na F2, uma conta por contador (Q-14); reavaliar com o resultado da validação | Depois da F1 |
+| Mecanismo das pendências | Proposto: uma mensagem por dia e canal, com o mês e o total em aberto (SRS, RN-19) | Antes da F3 |
 | Metas numéricas das métricas | Ainda não definidas | Depois da F1 |
 
 As questões de regra e de comportamento (cliente cadastrado depois do vencimento, prazos em fim de semana etc.) estão na seção 9 do [SRS](./SRS.md). As decisões de arquitetura ficam em [docs/adr](./adr/README.md).
@@ -339,3 +342,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 |---|---|---|
 | 1.0 | 07/11/2026 | Primeira versão, a partir da Documentação do Produto e do Briefing de 03/11/2026 |
 | 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), pendências de meses anteriores (Q-02), WhatsApp com modelos fixos (ADR-0002) e CPF/CNPJ só no provedor (ADR-0003) |
+| 1.2 | 09/11/2026 | Decisões: isolamento por RLS (ADR-0004) e questões de regra adotadas conforme o SRS |

@@ -6,8 +6,8 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.1, rascunho para validação |
-| **Data** | 07/11/2026 |
+| **Versão** | 1.2, rascunho para validação |
+| **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
@@ -76,7 +76,7 @@ flowchart TD
     B --> C["Aceitar termos de uso<br/>e política de privacidade"]
     C --> D["Informar nome e chave Pix"]
     D --> E["Régua padrão criada<br/>3 dias antes, no dia e 3 dias depois ligados<br/>7 dias depois desligado"]
-    E --> F["Calendário fiscal padrão criado"]
+    E --> F["Calendário fiscal padrão<br/>copiado da plataforma"]
     F --> G["Cadastrar os primeiros clientes"]
     G --> H["Tela única com o resumo do mês"]
     E -. "opcional" .-> R["Revisar os textos da régua"]
@@ -187,7 +187,7 @@ stateDiagram-v2
 
 - **Pagamento** é a baixa manual (RF-12) ou a confirmação do Pix (RF-17).
 - **Desfazer** apaga o pagamento, e a cobrança volta ao estado que a data indica: "Vence dia X", "Vence hoje" ou "Atrasado há N dias".
-- O status nunca é digitado: ele é calculado pela RN-02 a partir da data de vencimento e da existência de pagamento. Uma cobrança criada depois do vencimento já nasce como "Vence hoje" ou "Atrasado" (ver Q-01).
+- O status nunca é digitado: ele é calculado pela RN-02 a partir da data de vencimento e da existência de pagamento. Se, no cadastro, o contador escolher cobrar ainda no mês corrente depois do vencimento, a cobrança já nasce como "Atrasado" (RN-21).
 
 ---
 
@@ -195,13 +195,18 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A["Botão + Novo cliente"] --> B["Preencher nome, tipo, honorário,<br/>dia de vencimento, telefone e e-mail"]
+    A["Botão + Novo cliente"] --> B["Preencher nome, tipo, honorário,<br/>dia de vencimento, telefone, e-mail e canais"]
     B --> V{"Dados válidos?<br/>dia entre 1 e 28"}
     V -- "não" --> ERR["Mostra o erro no campo"]
     ERR --> B
-    V -- "sim" --> S["Cliente salvo"]
-    S --> COB["Cobrança do mês criada<br/>honorário + extra zerado"]
-    S --> OBR["Obrigações do tipo no checklist"]
+    V -- "sim" --> Q{"O vencimento deste mês<br/>já passou?"}
+    Q -- "não" --> S1["Cliente salvo<br/>cobra a partir deste mês"]
+    Q -- "sim" --> I{"Cobrar a partir de"}
+    I -- "próximo mês (padrão)" --> S2["Cliente salvo<br/>cobra a partir do próximo mês"]
+    I -- "este mês" --> S3["Cliente salvo<br/>cobrança deste mês já atrasada"]
+    S1 --> OBR["Obrigações do tipo no checklist<br/>desde este mês"]
+    S2 --> OBR
+    S3 --> OBR
     OBR --> T{"Tipo do cliente"}
     T -- "MEI" --> MEI["DAS-MEI e DASN-SIMEI"]
     T -- "Simples" --> SN["DAS e DEFIS"]
@@ -227,7 +232,7 @@ flowchart TD
 
 **CPF/CNPJ (F4).** Quando o provedor de Pix exigir, o cadastro do cliente pede o CPF ou o CNPJ. O dado vai direto para o provedor e não é guardado no app (ADR-0003). Ver a seção 9.
 
-**Requisitos:** RF-01, RF-02, RF-04, RF-05, RF-06, RN-07, RN-10, RN-14, RN-16, RN-20.
+**Requisitos:** RF-01, RF-02, RF-04, RF-05, RF-06, RN-07, RN-10, RN-14, RN-16, RN-20, RN-21.
 
 ---
 
@@ -269,7 +274,7 @@ flowchart TD
     EXT --> R["Registrar envio<br/>canal manual"]
 ```
 
-**Requisitos:** RF-14, RF-32, RN-03, RN-05, RN-11. Passo desligado na régua: ver Q-03.
+**Requisitos:** RF-14, RF-32, RN-03, RN-05, RN-11. O texto é usado mesmo que o passo esteja desligado na régua (Q-03).
 
 ### 7.3 Marcar como pago e desfazer
 
@@ -304,7 +309,7 @@ flowchart TD
 
 ## 8. Rotina diária automática (versão final)
 
-Uma vez por dia, o sistema confere os vencimentos e dispara o passo certo da régua, sem ação do contador.
+Uma vez por dia, às 9h no fuso de Brasília, o sistema confere os vencimentos e dispara o passo certo da régua, sem ação do contador.
 
 ```mermaid
 sequenceDiagram
@@ -318,8 +323,8 @@ sequenceDiagram
     AG->>APP: dispara a rotina do dia
     APP->>DB: busca clientes ativos com cobranças em aberto, do mês e de meses anteriores
     loop cada cliente e cada passo ligado
-        APP->>APP: data do passo = vencimento do mês + dias do passo
-        alt data do passo é hoje e o passo não foi enviado neste mês
+        APP->>APP: o passo cai hoje para algum vencimento do cliente?
+        alt sim, e o passo ainda não foi enviado para aquele mês
             APP->>APP: monta uma mensagem com o mês e as pendências
             APP->>CAN: envia (no WhatsApp, pelo modelo aprovado)
             CAN-->>CLI: lembrete com valor, vencimento, Pix e total em aberto
@@ -340,9 +345,10 @@ sequenceDiagram
 | Rotina roda duas vezes no mesmo dia | Não repete o envio: um passo por cliente, mês e canal (RN-13, proposto) |
 | Cliente sem e-mail e sem telefone | Não envia; a cobrança mostra "sem contato" (RN-17, proposto) |
 | Provedor recusa a mensagem | Registra o envio como "falhou"; o contador vê a falha na cobrança (RF-35) |
-| Rotina deixou de rodar num dia | Ver Q-09 |
+| Passo que cai em outro mês | O "3 dias antes" de quem vence no dia 2 sai no fim do mês anterior; o "7 dias depois" de quem vence no dia 28 sai no início do mês seguinte (SRS, seção 4.3) |
+| Rotina deixou de rodar em algum dia | A execução seguinte envia só o passo mais recente de cada cliente; os anteriores ficam como "pulado" (RN-22) |
 
-**Requisitos:** RF-16, RF-34, RF-35, RN-18, RN-19, RNF-09, ADR-0002.
+**Requisitos:** RF-16, RF-34, RF-35, RN-18, RN-19, RN-22, RNF-09, ADR-0002.
 
 ---
 
@@ -407,17 +413,17 @@ flowchart TD
     G --> H["Card Guias a fazer no mês diminui"]
 ```
 
-| Obrigação | Tipo de cliente | Periodicidade | Período da marcação |
-|---|---|---|---|
-| DAS-MEI | MEI | Mensal (dia 20) | Mês |
-| DAS do Simples | Simples | Mensal (dia 20) | Mês |
-| DEFIS | Simples | Anual | Ano |
-| DASN-SIMEI | MEI | Anual | Ano |
-| IRPF | PF | Anual | Ano |
+| Obrigação | Tipo de cliente | Periodicidade | Período da marcação | Competência mostrada |
+|---|---|---|---|---|
+| DAS-MEI | MEI | Mensal (dia 20) | Mês | Mês anterior |
+| DAS do Simples | Simples | Mensal (dia 20) | Mês | Mês anterior |
+| DEFIS | Simples | Anual | Ano | Ano anterior |
+| DASN-SIMEI | MEI | Anual | Ano | Ano anterior |
+| IRPF | PF | Anual | Ano | Ano anterior |
 
-As datas do protótipo são de exemplo e precisam ser conferidas por um contador. Competência da guia: ver Q-07. Prazo em fim de semana ou feriado: ver Q-06.
+Cada obrigação é rotulada pelo vencimento e mostra a competência, por exemplo: "DAS-MEI · vence 20/11 · competência outubro" (RN-23). O prazo mostrado é a data cadastrada: o app não ajusta sozinho fins de semana e feriados (Q-06). As datas do protótipo são de exemplo e precisam ser conferidas por um contador.
 
-**Requisitos:** RF-20, RF-21, RF-22, RF-24, RN-06, RN-10.
+**Requisitos:** RF-20, RF-21, RF-22, RF-24, RN-06, RN-10, RN-23.
 
 ---
 
@@ -447,18 +453,23 @@ No texto do e-mail, os campos são escritos entre chaves: `{nome}`, `{mes}`, `{v
 
 ```mermaid
 flowchart TD
+    P["Plataforma publica o<br/>calendário padrão do ano"] --> AT{"Obrigação do contador<br/>foi personalizada?"}
+    AT -- "não" --> UP["Atualizada sozinha<br/>(proposto)"]
+    AT -- "sim" --> AV["Aviso ao contador<br/>aplicar ou manter"]
     A["Aba Obrigações"] --> B["Calendário fiscal"]
     B --> C{"Ação"}
-    C -- "Nova" --> D["Nome, tipos de cliente,<br/>mensal ou anual, dia ou data"]
+    C -- "Nova" --> D["Nome, tipos de cliente, mensal ou anual,<br/>dia ou data e competência"]
     C -- "Editar" --> D
     C -- "Desativar" --> X["Sai do checklist<br/>marcações antigas mantidas"]
-    D --> E["Salvar"]
+    D --> E["Salvar<br/>a obrigação fica personalizada"]
     E --> F["Checklist e card<br/>Guias a fazer recalculados"]
+    UP --> F
+    AV --> F
 ```
 
-As regras fiscais mudam: as datas devem ser fáceis de atualizar e conferidas por um contador. Quem mantém o calendário padrão: ver Q-08.
+A plataforma mantém o calendário padrão e publica a versão de cada ano, conferida por um contador. O contador ajusta o que quiser na própria conta (Q-08).
 
-**Requisitos:** RF-23, RNF-11.
+**Requisitos:** RF-23, RN-23, RNF-11.
 
 ---
 
@@ -512,7 +523,7 @@ flowchart TD
 | Contador desfaz um pagamento | Status recalculado; a régua volta para os passos futuros | RF-12 |
 | Todos os passos da régua desligados | "Sem próximos lembretes" na cobrança | RF-15 (proposto) |
 | Campo desconhecido no texto da régua | Aviso antes de salvar | RF-32 (proposto) |
-| Rotina diária não rodou | Alerta; recuperação segundo Q-09 | RNF-09 |
+| Rotina diária não rodou | Alerta; a execução seguinte envia só o passo mais recente de cada cliente | RNF-09, RN-22 |
 | Sessão expirada | Volta ao login, sem perder o que foi salvo | RF-40 |
 
 ---
@@ -526,13 +537,13 @@ flowchart TD
 | Rotina mensal do contador | 3 | RF-01, RF-12, RF-13, RF-21, RF-31, RF-33 |
 | Ciclo mensal de cobrança e pendências | 4 | RF-18, RF-30, RF-34, RN-08, RN-09, RN-13, RN-18, RN-19 |
 | Estados da cobrança | 5 | RF-10, RF-12, RN-02 |
-| Cadastro de cliente | 6 | RF-01, RF-02, RF-04 a RF-06, RN-07, RN-10, RN-14 |
+| Cadastro de cliente | 6 | RF-01, RF-02, RF-04 a RF-06, RN-07, RN-10, RN-14, RN-21 |
 | Cobranças | 7 | RF-10 a RF-15, RN-01, RN-03 |
-| Rotina diária | 8 | RF-16, RF-34, RF-35, RNF-09 |
+| Rotina diária | 8 | RF-16, RF-34, RF-35, RN-22, RNF-09 |
 | Pix com baixa automática | 9 | RF-17, RNF-07, RNF-16, RN-20 |
-| Obrigações | 10 | RF-20 a RF-22, RF-24, RN-06, RN-10 |
+| Obrigações | 10 | RF-20 a RF-22, RF-24, RN-06, RN-10, RN-23 |
 | Régua de cobrança | 11 | RF-30 a RF-33, RN-04, RN-05 |
-| Calendário fiscal | 12 | RF-23, RNF-11 |
+| Calendário fiscal | 12 | RF-23, RN-23, RNF-11 |
 | Histórico | 13 | RF-18 |
 | Assinatura | 14 | RF-50 |
 
@@ -544,3 +555,4 @@ flowchart TD
 |---|---|---|
 | 1.0 | 07/11/2026 | Primeira versão, a partir do User Flow da Documentação do Produto e do Briefing de 03/11/2026 |
 | 1.1 | 07/11/2026 | Pendências de meses anteriores (seção 4.1), rotina diária por cliente, Pix com CPF/CNPJ só no provedor e régua com WhatsApp fixo |
+| 1.2 | 09/11/2026 | Início da cobrança no cadastro (RN-21), canais por cliente, rotina às 9h com passos que caem em outro mês e recuperação (RN-22), competência das obrigações (RN-23) e calendário padrão da plataforma |
