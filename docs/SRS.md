@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.2, rascunho para validação |
+| **Versão** | 1.3, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -147,7 +147,7 @@ flowchart LR
 
 ### 2.6 Premissas e dependências
 
-- **Stack decidida (ADR-0001):** Next.js (React) na interface e nas rotas de servidor; Supabase para o banco (Postgres) e o login (Auth). A rotina diária e as integrações (e-mail primeiro, depois WhatsApp pela API oficial e Pix por um provedor como o Asaas) terão ADRs próprias.
+- **Stack decidida (ADR-0001):** Next.js (React) na interface e nas rotas de servidor; Supabase para o banco (Postgres) e o login (Auth). A rotina diária roda no Supabase Cron, em duas etapas (ADR-0005). As integrações (e-mail primeiro, depois WhatsApp pela API oficial e Pix por um provedor como o Asaas) terão ADRs próprias.
 - O app não guarda CPF nem CNPJ dos clientes; quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 - O contador tem uma chave Pix.
 - Os clientes têm e-mail ou celular para receber os lembretes.
@@ -473,6 +473,8 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 5. Registra cada tentativa como envio (RF-35), com as cobranças incluídas na mensagem.
 6. Se a rotina deixou de rodar em algum dia, a execução seguinte envia, para cada cliente, só o passo mais recente que ficou para trás. Os anteriores ficam registrados como "pulado" (RN-22, Q-09).
 
+**Implementação (ADR-0005).** A rotina tem duas etapas. Às 9h, uma função no banco planeja os lembretes do dia e grava cada um como envio `pendente`. Em seguida, uma Edge Function envia em lotes. Antes de enviar, a cobrança é conferida de novo: se foi paga depois do planejamento, o envio é cancelado (RN-09). **(proposto)** Os envios só saem entre 9h e 20h de Brasília.
+
 **Critérios de aceite**
 - Dado que há uma cobrança não paga com vencimento no dia 10 e o passo −3 está ligado, quando a rotina roda no dia 7, então é enviado o lembrete "3 dias antes".
 - Dado que a mesma cobrança foi paga no dia 9 e o cliente não tem pendências, quando a rotina roda no dia 10, então nada é enviado.
@@ -482,11 +484,13 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 - Dado que a rotina já rodou hoje, quando ela roda de novo no mesmo dia, então nenhum cliente recebe a mesma mensagem duas vezes (mesmo passo e canal).
 - Dado um cliente com vencimento no dia 2 e o passo −3 ligado, quando a rotina roda em 29/11, então é enviado o lembrete "3 dias antes" da cobrança de dezembro.
 - Dado um cliente com vencimento no dia 10 e a rotina parada dos dias 7 a 10, quando ela volta a rodar no dia 11, então o cliente recebe só a mensagem do passo "No dia", e o passo "3 dias antes" fica registrado como pulado.
+- Dado que um lembrete foi planejado às 9h e a cobrança foi paga às 9h02, quando a etapa de envio processa a fila, então o envio fica como cancelado e nada é enviado.
 
 #### RF-35 · Registro dos envios
 
 - Cada envio guarda: cliente, mês da régua, passo, canal (e-mail, WhatsApp ou manual), data e hora, status e as cobranças incluídas na mensagem.
-- **(proposto)** Status: `pendente`, `enviado`, `falhou`, `pulado` (passo que ficou para trás, RN-22) e, quando o provedor informar, `entregue` e `lido`.
+- Status (ADR-0005): `pendente`, `enviando`, `enviado`, `falhou`, `pulado` (passo que ficou para trás, RN-22), `cancelado` (cobrança paga antes do envio) e, quando o provedor informar, `entregue` e `lido`.
+- **(proposto)** Erro temporário gera até 3 novas tentativas. Erro definitivo (endereço inválido, número inexistente) fica como `falhou` na hora.
 - O contador vê os envios de cada cobrança. **(proposto)** Envios com falha aparecem em destaque.
 
 ### 3.6 Conta, acesso e privacidade
@@ -688,6 +692,8 @@ erDiagram
         text canal "email, whatsapp ou manual"
         timestamp enviado_em
         text status
+        int tentativas
+        text erro
     }
     ENVIO_COBRANCAS {
         uuid envio_id PK, FK
@@ -731,6 +737,14 @@ erDiagram
         text periodo "AAAA-MM ou AAAA"
         timestamp feito_em
     }
+    ROTINA_EXECUCOES {
+        uuid id PK
+        date data_referencia
+        timestamp iniciou_em
+        timestamp terminou_em
+        text situacao
+        int planejados
+    }
 ```
 
 | Tabela | Campos principais (fonte) | Restrições e campos acrescentados |
@@ -738,12 +752,13 @@ erDiagram
 | `contadores` | id, nome, e-mail, chave Pix, plano | `id` é o id do usuário no Supabase Auth (ADR-0004). E-mail único. Acrescentar **(proposto)**: data do aceite dos termos e versão aceita (RF-43), data de criação |
 | `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentados: `cobranca_inicio`, mês da primeira cobrança (RN-21); `canais`, canais de envio, por padrão todos com contato (Q-05); `provedor_cliente_id`, identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
 | `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentar **(proposto)**: identificador da cobrança no provedor de Pix (RF-17) |
-| `envios` | id, cobrança, passo da régua, canal, enviado em, status | Ajustado pela Q-02: o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. No máximo um envio `enviado` ou `pulado` por cliente, mês, passo e canal (RN-13, RN-22). Acrescentar **(proposto)**: mensagem de erro e identificador no provedor |
+| `envios` | id, cobrança, passo da régua, canal, enviado em, status | Ajustado pela Q-02: o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. É também a fila da rotina (ADR-0005): um registro por cliente, mês, passo e canal automático, garantido por chave única (RN-13); as novas tentativas atualizam o mesmo registro. Acrescentados: `tentativas`, `proxima_tentativa_em`, `erro` e o identificador da mensagem no provedor |
 | `envio_cobrancas` | Tabela nova | Liga cada envio às cobranças que ele lembrou: a do mês e as pendências (RN-19) |
 | `regua` | id, contador, dias (−3, 0, +3, +7), nome, ativo, texto | Um passo por contador e número de dias |
 | `obrigacoes_padrao` | Tabela nova (Q-08) | Calendário padrão publicado pela plataforma, por ano. Sem `contador_id`: todos os contadores leem, ninguém escreve pela API (ADR-0004) |
 | `obrigacoes` | id, contador, nome, tipos de cliente, mensal ou anual, dia ou data | Cópia do calendário padrão na conta do contador. Mensal: dia de 1 a 31. Anual: dia e mês. Acrescentados: `padrao_id` (origem), `personalizada` (o contador ajustou, Q-08), `competencia` (RN-23) e `ativo` |
 | `obrigacoes_feitas` | id, obrigação, cliente, período, feito em | Uma marcação por obrigação, cliente e período. Período `AAAA-MM` (mensal) ou `AAAA` (anual), pela RN-06 |
+| `rotina_execucoes` | Tabela nova (ADR-0005) | Uma linha por execução do planejamento: data de referência, início, fim, situação e contagens. Interna da plataforma: sem `contador_id` e fora da API |
 
 > Interpretação deste documento: na tabela `cobrancas`, `valor` é o honorário do mês e `extra` é o serviço extra, guardados separados. O total é a soma dos dois.
 
@@ -761,7 +776,7 @@ erDiagram
 | RNF-06 | Segurança | Um contador nunca acessa dados de outro. O isolamento é garantido no banco, com RLS em todas as tabelas, e coberto por testes automatizados (ADR-0004) | A fazer | F2 | Decisão (ADR-0004) |
 | RNF-07 | Segurança | Comunicação só por HTTPS; chaves de provedores fora do código; avisos de pagamento (webhooks) autenticados antes de qualquer baixa | A fazer | F2, F4 | Proposto |
 | RNF-08 | Localização | Interface em português do Brasil; valores em reais (R$ 1.234,56); datas em dd/mm/aaaa; status e rotina calculados no fuso de Brasília | A fazer | F2 | Briefing, Proposto (fuso) |
-| RNF-09 | Confiabilidade | A rotina diária pode rodar de novo sem enviar mensagens repetidas (RN-13); falhas ficam registradas e visíveis; há alerta se a rotina não rodar | A fazer | F3 | Proposto |
+| RNF-09 | Confiabilidade | A rotina diária pode rodar de novo sem enviar mensagens repetidas (RN-13); falhas ficam registradas e visíveis; há alerta se a rotina não rodar (ADR-0005) | A fazer | F3 | Proposto |
 | RNF-10 | Desempenho | A tela principal carrega em até 2 segundos numa conexão 4G, com até 300 clientes (meta a validar) | A fazer | F2 | Proposto |
 | RNF-11 | Manutenibilidade | Obrigações e datas são dados configuráveis e não exigem nova versão do código para mudar | A fazer | F2 (dados), F5 (tela) | Briefing, Proposto |
 | RNF-12 | Continuidade | Backup diário do banco, com retenção mínima de 7 dias | A fazer | F2 | Proposto |
@@ -778,7 +793,7 @@ erDiagram
 |---|---|---|---|
 | **Interface do usuário** | F2 | Tela única: topo (mês de referência e + Novo cliente), resumo do mês e abas Cobranças, Obrigações e Régua de cobrança. Detalhes no [Mapa de fluxo](./Mapa%20de%20fluxo.md) | RF-01 a RF-35, RNF-01, RNF-02 |
 | **Autenticação** | F2 | Login por e-mail com Supabase Auth (ADR-0001) | RF-40 a RF-45 |
-| **Agendador** | F3 | Executa a rotina diária | RF-34, RNF-09 |
+| **Agendador** | F3 | Supabase Cron: planejamento às 9h de Brasília e envio em lotes a cada poucos minutos (ADR-0005) | RF-34, RNF-09 |
 | **Provedor de e-mail** | F3 | Envio transacional dos lembretes. **(proposto)** Recebimento do status de entrega e devolução | RF-16, RF-35, RNF-14 |
 | **WhatsApp (API oficial)** | F4 | Envio dos modelos fixos aprovados (ADR-0002); recebimento do status de entrega e leitura | RF-16, RF-35, RNF-04 |
 | **Provedor de Pix** | F4 | Cadastrar o pagador com CPF ou CNPJ, guardados só no provedor (ADR-0003); criar e cancelar cobrança Pix; receber o aviso de pagamento | RF-17, RNF-07, RNF-16 |
@@ -823,6 +838,7 @@ erDiagram
 | Q-04 | Os textos da régua são editáveis, mas o WhatsApp só envia modelos aprovados. Como conciliar? | Texto livre só no e-mail. No WhatsApp, modelos fixos da plataforma, aprovados na Meta, com os campos como variáveis | 07/11/2026 | ADR-0002 |
 | Q-12 | O provedor de Pix exige o CPF ou CNPJ do pagador? | O app não guarda CPF nem CNPJ em nenhuma hipótese. Quando o provedor exigir, o dado vai direto para ele, e o app guarda só o identificador do pagador | 07/11/2026 | ADR-0003, RN-20 |
 | — | Isolamento dos dados entre contadores | RLS em todas as tabelas, `contador_id` em todas as tabelas de dados, chaves estrangeiras compostas e testes com dois contadores | 09/11/2026 | ADR-0004 |
+| — | Rotina diária | Supabase Cron em duas etapas: planejar no banco e enviar por Edge Function, com a tabela `envios` como fila | 09/11/2026 | ADR-0005 |
 | Q-01 | Cliente cadastrado depois do dia de vencimento do mês | O cadastro pergunta se a cobrança começa neste mês ou no próximo; o padrão é o próximo | 09/11/2026 | RN-21, RF-01 |
 | Q-03 | A mensagem manual usa o texto de um passo desligado? | Sim: desligar um passo só impede o envio automático | 09/11/2026 | RN-03, RF-14 |
 | Q-05 | Por qual canal cada cliente recebe? | Todos os canais com contato cadastrado, com opção de escolher por cliente | 09/11/2026 | RF-05, RF-16 |
@@ -855,3 +871,4 @@ O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confi
 | 1.0 | 07/11/2026 | Primeira versão, a partir da Documentação do Produto e do Briefing de 03/11/2026 |
 | 1.1 | 07/11/2026 | Decisões: stack (ADR-0001), Q-02, Q-04 (ADR-0002) e Q-12 (ADR-0003). Novas RN-18 a RN-20, seção 4.3, ajuste da tabela `envios` e novas questões Q-16 a Q-18 |
 | 1.2 | 09/11/2026 | Isolamento por RLS (ADR-0004) no modelo de dados; decisões das questões Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15; novas RN-21 a RN-23; tabela `obrigacoes_padrao`; correção da seção 4.3 para passos que caem em outro mês |
+| 1.3 | 09/11/2026 | Rotina diária em duas etapas (ADR-0005): novos status de envio, novas tentativas, tabela `rotina_execucoes` |

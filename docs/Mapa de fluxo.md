@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.2, rascunho para validação |
+| **Versão** | 1.3, rascunho para validação |
 | **Data** | 09/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -309,29 +309,33 @@ flowchart TD
 
 ## 8. Rotina diária automática (versão final)
 
-Uma vez por dia, às 9h no fuso de Brasília, o sistema confere os vencimentos e dispara o passo certo da régua, sem ação do contador.
+Uma vez por dia, às 9h no fuso de Brasília, o sistema confere os vencimentos e dispara o passo certo da régua, sem ação do contador. A rotina tem duas etapas (ADR-0005): **planejar**, numa função do banco, e **enviar**, numa Edge Function que processa a fila em lotes.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AG as Agendador
-    participant APP as Agenda Contábil
+    participant CRON as Supabase Cron
+    participant PLAN as Planejar (banco)
     participant DB as Banco de dados
+    participant ENV as Enviar (Edge Function)
     participant CAN as E-mail ou WhatsApp
     participant CLI as Cliente do contador
 
-    AG->>APP: dispara a rotina do dia
-    APP->>DB: busca clientes ativos com cobranças em aberto, do mês e de meses anteriores
-    loop cada cliente e cada passo ligado
-        APP->>APP: o passo cai hoje para algum vencimento do cliente?
-        alt sim, e o passo ainda não foi enviado para aquele mês
-            APP->>APP: monta uma mensagem com o mês e as pendências
-            APP->>CAN: envia (no WhatsApp, pelo modelo aprovado)
+    CRON->>PLAN: 9h de Brasília: planejar o dia
+    PLAN->>DB: cria as cobranças que faltam
+    PLAN->>DB: calcula os passos de hoje e dos dias perdidos
+    PLAN->>DB: grava os envios pendentes, sem duplicar
+    loop a cada poucos minutos, enquanto houver pendentes
+        CRON->>ENV: processar a fila
+        ENV->>DB: separa um lote de envios pendentes
+        ENV->>DB: confere se cada cobrança continua em aberto
+        alt continua em aberto
+            ENV->>CAN: envia a mensagem com o mês e as pendências
             CAN-->>CLI: lembrete com valor, vencimento, Pix e total em aberto
-            CAN-->>APP: aceito ou falhou
-            APP->>DB: registra o envio e as cobranças incluídas
-        else qualquer outro caso
-            APP->>APP: não envia
+            CAN-->>ENV: aceito ou falhou
+            ENV->>DB: marca enviado, ou agenda nova tentativa
+        else foi paga depois do planejamento
+            ENV->>DB: marca cancelado
         end
     end
 ```
@@ -342,13 +346,16 @@ sequenceDiagram
 | Cliente com o mês e pendências em aberto | Uma mensagem só, com o total em aberto (RN-19, proposto) |
 | Cliente pagou o mês, mas tem pendências | Envia só no passo "No dia", com o texto de pendência (RN-18, RN-19, proposto) |
 | Passo desligado | Não envia |
-| Rotina roda duas vezes no mesmo dia | Não repete o envio: um passo por cliente, mês e canal (RN-13, proposto) |
+| Rotina roda duas vezes no mesmo dia | Não repete o envio: o banco aceita um só registro por cliente, mês, passo e canal (RN-13, ADR-0005) |
+| Cliente pagou entre o planejamento e o envio | Envio cancelado (RN-09, ADR-0005) |
 | Cliente sem e-mail e sem telefone | Não envia; a cobrança mostra "sem contato" (RN-17, proposto) |
-| Provedor recusa a mensagem | Registra o envio como "falhou"; o contador vê a falha na cobrança (RF-35) |
+| Provedor fora do ar ou com limite de envio | Nova tentativa mais tarde, até 3 vezes (proposto, ADR-0005) |
+| Provedor recusa a mensagem (endereço inválido, número inexistente) | Registra o envio como "falhou", sem nova tentativa; o contador vê a falha na cobrança (RF-35) |
+| Fila não terminou até as 20h | O restante sai no dia seguinte, a partir das 9h (proposto, ADR-0005) |
 | Passo que cai em outro mês | O "3 dias antes" de quem vence no dia 2 sai no fim do mês anterior; o "7 dias depois" de quem vence no dia 28 sai no início do mês seguinte (SRS, seção 4.3) |
 | Rotina deixou de rodar em algum dia | A execução seguinte envia só o passo mais recente de cada cliente; os anteriores ficam como "pulado" (RN-22) |
 
-**Requisitos:** RF-16, RF-34, RF-35, RN-18, RN-19, RN-22, RNF-09, ADR-0002.
+**Requisitos:** RF-16, RF-34, RF-35, RN-09, RN-18, RN-19, RN-22, RNF-09, ADR-0002, ADR-0005.
 
 ---
 
@@ -556,3 +563,4 @@ flowchart TD
 | 1.0 | 07/11/2026 | Primeira versão, a partir do User Flow da Documentação do Produto e do Briefing de 03/11/2026 |
 | 1.1 | 07/11/2026 | Pendências de meses anteriores (seção 4.1), rotina diária por cliente, Pix com CPF/CNPJ só no provedor e régua com WhatsApp fixo |
 | 1.2 | 09/11/2026 | Início da cobrança no cadastro (RN-21), canais por cliente, rotina às 9h com passos que caem em outro mês e recuperação (RN-22), competência das obrigações (RN-23) e calendário padrão da plataforma |
+| 1.3 | 09/11/2026 | Rotina diária em duas etapas, planejar e enviar (ADR-0005) |
