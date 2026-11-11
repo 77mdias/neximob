@@ -1,0 +1,3 @@
+-- Dados fictícios para o Supabase local (supabase db reset).
+-- Ainda vazio: o calendário padrão vem das migrações, e as contas de teste
+-- são criadas pelo cadastro do app. Nunca colocar dados reais aqui.

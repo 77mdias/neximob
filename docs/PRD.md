@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.5, rascunho para validação |
-| **Data** | 09/11/2026 |
+| **Versão** | 1.6, rascunho para validação |
+| **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
-| **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
+| **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 > **Como ler este documento.** O conteúdo vem das fontes acima. O que foi acrescentado aqui e não está nas fontes aparece marcado como **(proposto)** e precisa ser validado antes de virar requisito.
 
@@ -349,3 +349,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | 1.3 | 09/11/2026 | Decisão: rotina diária com Supabase Cron (ADR-0005) |
 | 1.4 | 09/11/2026 | Decisão: hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
 | 1.5 | 09/11/2026 | Decisão: e-mail com o Resend (ADR-0007) |
+| 1.6 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |

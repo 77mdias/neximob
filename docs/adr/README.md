@@ -1,5 +1,7 @@
 # Decisões de arquitetura (ADR)
 
+A visão consolidada da arquitetura está em [Arquitetura](../Arquitetura.md).
+
 Cada decisão de arquitetura ou de produto com impacto técnico fica registrada num arquivo próprio, com o contexto, a decisão, as alternativas e as consequências. O objetivo é que qualquer pessoa entenda **por que** o sistema é como é, e não só **como** ele é.
 
 | ADR | Título | Status | Data |

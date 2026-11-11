@@ -74,3 +74,13 @@ O isolamento é garantido **no banco**, pelas políticas de acesso por linha do 
 - A chave secreta é o ponto sensível. Ela fica só nas variáveis de ambiente do servidor, com uso restrito aos dois pontos acima, e deve ser trocada se houver suspeita de vazamento.
 - **(proposto)** Não existe acesso de "administrador" pelo app. Atendimentos de suporte usam o painel do Supabase, com registro de quem acessou e por quê.
 - Se a Q-14 mudar e um escritório passar a ter vários usuários, `contador_id` passa a identificar a conta do escritório, e a política passa a verificar se o usuário participa dessa conta (tabela de membros). A mudança fica concentrada nas políticas.
+
+## Complemento (11/11/2026): o que a implementação acrescentou
+
+Ao escrever o esquema físico e os testes (`supabase/migrations/` e `supabase/tests/database/`), três detalhes entraram na decisão:
+
+1. **Chaves únicas começam por `contador_id`.** O primeiro teste mostrou que, com a chave única só em (`cliente_id`, `mes`), um contador que tentasse gravar com os ids de outro recebia "chave duplicada", e com isso descobria que aquele dado existia. Com `contador_id` na frente, o erro passa a ser sempre "não encontrado", pela chave estrangeira composta.
+2. **Permissões por coluna, além da RLS.** A RLS escolhe as linhas; as permissões escolhem o que o contador pode fazer com elas. Campos do sistema (plano, situação do e-mail, ids nos provedores) e envios automáticos não podem ser alterados pela sessão do contador.
+3. **O visitante sem login (`anon`) não tem permissão em nenhuma tabela**, além de não ter política de RLS.
+
+Os detalhes estão na [Arquitetura](../Arquitetura.md), seção 4.

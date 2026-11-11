@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.4, rascunho para validação |
-| **Data** | 09/11/2026 |
+| **Versão** | 1.5, rascunho para validação |
+| **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
-| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 **Legenda**
 
@@ -567,3 +567,4 @@ flowchart TD
 | 1.2 | 09/11/2026 | Início da cobrança no cadastro (RN-21), canais por cliente, rotina às 9h com passos que caem em outro mês e recuperação (RN-22), competência das obrigações (RN-23) e calendário padrão da plataforma |
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas, planejar e enviar (ADR-0005) |
 | 1.4 | 09/11/2026 | E-mail devolvido ou marcado como spam (RN-24, ADR-0007) |
+| 1.5 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |

@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Agenda Contábil (nome de trabalho) |
 | **Repositório** | `neximob` |
-| **Versão** | 1.5, rascunho para validação |
-| **Data** | 09/11/2026 |
+| **Versão** | 1.6, rascunho para validação |
+| **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
-| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 ---
 
@@ -636,9 +636,9 @@ Exemplo de bloco de pendências **(proposto)**: "Também está em aberto: outubr
 
 ## 5. Modelo de dados
 
-No protótipo, tudo fica num objeto salvo no navegador. Para a versão final, as fontes sugerem as tabelas abaixo, já com os ajustes das decisões registradas. Este é o **modelo lógico**: tipos exatos, índices e migrações ficam para a documentação técnica. Os dados de exemplo do protótipo não serão migrados **(proposto)**.
+No protótipo, tudo fica num objeto salvo no navegador. Para a versão final, as fontes sugerem as tabelas abaixo, já com os ajustes das decisões registradas. Este é o **modelo lógico**. O **esquema físico** está em `supabase/migrations/`, descrito na [Arquitetura](./Arquitetura.md), seção 4. Os dados de exemplo do protótipo não serão migrados **(proposto)**.
 
-**Isolamento (ADR-0004).** Toda tabela de dados do contador tem a coluna `contador_id`, com RLS, e as chaves estrangeiras entre essas tabelas são compostas (`id` + `contador_id`). Para o diagrama ficar legível, as ligações com `CONTADORES` aparecem só nas tabelas principais.
+**Isolamento (ADR-0004).** Toda tabela de dados do contador tem a coluna `contador_id`, com RLS, e as chaves estrangeiras entre essas tabelas são compostas (`id` + `contador_id`). As chaves únicas também começam por `contador_id`, para que um contador não descubra, por erro de chave duplicada, que um dado de outro existe. Para o diagrama ficar legível, as ligações com `CONTADORES` aparecem só nas tabelas principais.
 
 ```mermaid
 erDiagram
@@ -681,6 +681,7 @@ erDiagram
         uuid contador_id FK
         uuid cliente_id FK
         date mes "competência AAAA-MM"
+        date vencimento "data guardada na cobrança"
         decimal valor "honorário do mês"
         decimal extra
         text motivo_extra
@@ -755,7 +756,7 @@ erDiagram
 |---|---|---|
 | `contadores` | id, nome, e-mail, chave Pix, plano | `id` é o id do usuário no Supabase Auth (ADR-0004). E-mail único. Acrescentar **(proposto)**: data do aceite dos termos e versão aceita (RF-43), data de criação |
 | `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentados: `cobranca_inicio`, mês da primeira cobrança (RN-21); `canais`, canais de envio, por padrão todos com contato (Q-05); **(proposto)** `email_situacao`, atualizada pelos avisos do Resend (RN-24); `provedor_cliente_id`, identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
-| `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentar **(proposto)**: identificador da cobrança no provedor de Pix (RF-17) |
+| `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentado no esquema físico: `vencimento`, a data de vencimento guardada na cobrança, para que mudar o dia de vencimento do cliente não altere cobranças antigas (RN-14). Acrescentar **(proposto)**: identificador da cobrança no provedor de Pix (RF-17) |
 | `envios` | id, cobrança, passo da régua, canal, enviado em, status | Ajustado pela Q-02: o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. É também a fila da rotina (ADR-0005): um registro por cliente, mês, passo e canal automático, garantido por chave única (RN-13); as novas tentativas atualizam o mesmo registro. Acrescentados: `tentativas`, `proxima_tentativa_em`, `erro` e o identificador da mensagem no provedor |
 | `envio_cobrancas` | Tabela nova | Liga cada envio às cobranças que ele lembrou: a do mês e as pendências (RN-19) |
 | `regua` | id, contador, dias (−3, 0, +3, +7), nome, ativo, texto | Um passo por contador e número de dias |
@@ -880,3 +881,4 @@ O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confi
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas (ADR-0005): novos status de envio, novas tentativas, tabela `rotina_execucoes` |
 | 1.4 | 09/11/2026 | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
 | 1.5 | 09/11/2026 | E-mail com o Resend (ADR-0007); nova RN-24 e campo `email_situacao` |
+| 1.6 | 11/11/2026 | Esquema físico em `supabase/migrations/`: `cobrancas.vencimento` e chaves únicas começando por `contador_id` |
