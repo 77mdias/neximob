@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(38);
 
 -- Funções auxiliares, apagadas no rollback: meses relativos ao mês corrente.
 create schema testes;
@@ -40,6 +40,13 @@ select is((select count(*)::int from public.regua), 4, 'a régua nasce com 4 pas
 select is((select count(*)::int from public.regua where ativo), 3, 'três passos nascem ligados');
 select is((select ativo from public.regua where dias = 7), false, 'o passo de 7 dias depois nasce desligado');
 select is((select count(*)::int from public.obrigacoes), 5, 'o calendário padrão é copiado para a conta');
+
+-- 5a e 5b: texto de pendência (Q-02)
+select ok((select texto_pendencia like '%{nome}%{pix}%' from public.contadores),
+  'a conta nova recebe o texto de pendência padrão, com os campos nome e pix');
+select lives_ok(
+  $$ update public.contadores set texto_pendencia = 'Olá, {nome}! Há honorários em aberto. Chave Pix: {pix}.' $$,
+  'o contador edita o texto de pendência');
 
 -- ---------------------------------------------------------------------------
 -- RF-01 e RN-07: cadastro de cliente

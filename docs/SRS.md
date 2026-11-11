@@ -1,12 +1,12 @@
-# SRS: Agenda Contábil
+# SRS: Neximob
 
 **Especificação de Requisitos de Software**
 
 | | |
 |---|---|
-| **Produto** | Agenda Contábil (nome de trabalho) |
+| **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.6, rascunho para validação |
+| **Versão** | 1.7, rascunho para validação |
 | **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -17,11 +17,11 @@
 
 ### 1.1 Propósito
 
-Este documento especifica os requisitos funcionais, os requisitos não funcionais, as regras de negócio e o modelo de dados da Agenda Contábil. Ele orienta a construção da versão final a partir do protótipo e serve de base para os testes de aceitação. É escrito para quem desenvolve, testa e decide o produto.
+Este documento especifica os requisitos funcionais, os requisitos não funcionais, as regras de negócio e o modelo de dados do Neximob. Ele orienta a construção da versão final a partir do protótipo e serve de base para os testes de aceitação. É escrito para quem desenvolve, testa e decide o produto.
 
 ### 1.2 Escopo do sistema
 
-A Agenda Contábil é uma aplicação web responsiva para o contador autônomo controlar:
+O Neximob é uma aplicação web responsiva para o contador autônomo controlar:
 
 - a **cobrança mensal dos honorários** dos clientes, com lembretes automáticos (régua de cobrança) e baixa por Pix;
 - o **checklist dos prazos fiscais** dos clientes MEI, Simples Nacional e pessoa física.
@@ -88,7 +88,7 @@ O glossário completo está no [PRD](./PRD.md), seção 14. Os termos abaixo tê
 flowchart LR
     CONT(["Contador"])
     CLI(["Cliente do contador"])
-    subgraph SIS["Agenda Contábil"]
+    subgraph SIS["Neximob"]
         APP["Aplicação web<br/>tela única"]
         ROT["Rotina diária"]
     end
@@ -192,7 +192,7 @@ flowchart LR
 | RF-42 | Perfil do contador: nome, e-mail, chave Pix e plano | A fazer | F2 | Briefing |
 | RF-43 | Aceite dos termos e consentimento (LGPD) | A fazer | F2 | Doc (RNF-05) |
 | RF-44 | Exportar e excluir os dados da conta | A fazer | F2 | Proposto |
-| RF-45 | Sair da conta e recuperar o acesso | A fazer | F2 | Proposto |
+| RF-45 | Sair da conta e recuperar o acesso | A fazer | F2 | Decisão (ADR-0008) |
 | RF-50 | Assinatura mensal do app | A fazer | F5 | Briefing |
 | RF-60 | Página do cliente para ver e pagar o honorário | Em aberto | — | Briefing |
 
@@ -327,7 +327,7 @@ Cada cobrança mostra um status, calculado pela RN-02:
 
 - O botão **Cobrar** mostra a mensagem do passo certo para o status da cobrança (RN-03), com os campos preenchidos (RN-11).
 - O contador pode **copiar** a mensagem e **registrar o envio**.
-- **(proposto)** Se o cliente tiver pendências de meses anteriores, a mensagem traz também o bloco de pendências (RN-19).
+- Se o cliente tiver pendências de meses anteriores, a mensagem traz também o bloco de pendências (RN-19).
 - O botão usa o texto do passo mesmo que ele esteja desligado na régua: desligar um passo só impede o envio automático (Q-03).
 - No protótipo, o registro é simulado. Na versão final, o registro cria um envio com o canal "manual" (RF-35).
 
@@ -441,7 +441,7 @@ A aba Obrigações mostra, além do checklist do mês, os próximos prazos do an
 
 - Cada passo pode ser ligado ou desligado.
 - O texto de cada passo pode ser editado. **A edição vale para o e-mail.** No WhatsApp, os textos são modelos fixos aprovados na Meta, e a aba mostra a prévia do WhatsApp sem edição (ADR-0002).
-- **(proposto)** Texto de pendência, também editável para o e-mail, usado quando só restam cobranças de meses anteriores em aberto (RN-18).
+- Texto de pendência, também editável para o e-mail, usado quando só restam cobranças de meses anteriores em aberto (RN-18). Nele valem os campos `{nome}` e `{pix}`; os meses e o total vêm no bloco que o sistema acrescenta.
 - **(proposto)** Botão para restaurar o texto padrão.
 
 #### RF-32 · Campos da mensagem
@@ -470,7 +470,7 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 1. Seleciona os clientes **ativos** com alguma cobrança **não paga**, do mês corrente ou de meses anteriores (RN-09, RN-16, RN-18).
 2. Para cada passo **ligado**, verifica se hoje é a data desse passo para algum vencimento do cliente. Esse vencimento pode ser de outro mês: o passo "3 dias antes" de quem vence no dia 2 cai no mês anterior, e os passos "3 dias depois" e "7 dias depois" de quem vence no fim do mês caem no mês seguinte (seção 4.3).
 3. Se esse passo ainda não foi enviado ao cliente para aquele mês e por aquele canal (RN-13), monta **uma única mensagem** com a cobrança do mês e as pendências (RN-19) e envia pelos canais do cliente (RF-05).
-4. **(proposto)** Se a cobrança do mês já foi paga e só restam pendências, envia só no passo "No dia", com o texto de pendência.
+4. Se a cobrança do mês já foi paga e só restam pendências, envia só no passo "No dia", com o texto de pendência.
 5. Registra cada tentativa como envio (RF-35), com as cobranças incluídas na mensagem.
 6. Se a rotina deixou de rodar em algum dia, a execução seguinte envia, para cada cliente, só o passo mais recente que ficou para trás. Os anteriores ficam registrados como "pulado" (RN-22, Q-09).
 
@@ -480,7 +480,7 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 - Dado que há uma cobrança não paga com vencimento no dia 10 e o passo −3 está ligado, quando a rotina roda no dia 7, então é enviado o lembrete "3 dias antes".
 - Dado que a mesma cobrança foi paga no dia 9 e o cliente não tem pendências, quando a rotina roda no dia 10, então nada é enviado.
 - Dado que o cliente não pagou outubro nem novembro, quando a rotina dispara o passo "No dia" de novembro, então ele recebe uma única mensagem com novembro, a pendência de outubro e o total em aberto.
-- Dado que o cliente pagou novembro mas não pagou outubro, quando chega o dia de vencimento de novembro, então ele recebe a mensagem de pendência; nos outros passos de novembro, nada é enviado **(proposto)**.
+- Dado que o cliente pagou novembro mas não pagou outubro, quando chega o dia de vencimento de novembro, então ele recebe a mensagem de pendência; nos outros passos de novembro, nada é enviado.
 - Dado o passo +7 desligado, quando a rotina roda no dia 17, então nada é enviado.
 - Dado que a rotina já rodou hoje, quando ela roda de novo no mesmo dia, então nenhum cliente recebe a mesma mensagem duas vezes (mesmo passo e canal).
 - Dado um cliente com vencimento no dia 2 e o passo −3 ligado, quando a rotina roda em 29/11, então é enviado o lembrete "3 dias antes" da cobrança de dezembro.
@@ -498,8 +498,9 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 
 #### RF-40 · Criar conta e entrar por e-mail
 
-- O contador cria a conta e entra com o e-mail.
-- **(proposto)** O método (senha ou link mágico por e-mail) fica para a documentação técnica. Exige confirmação do e-mail.
+- O contador cria a conta e entra com **e-mail e senha** (ADR-0008).
+- O primeiro acesso exige a confirmação do e-mail.
+- Senha com no mínimo 8 caracteres.
 - Os e-mails de login são enviados pelo Supabase Auth através do SMTP do Resend (ADR-0007).
 
 #### RF-41 · Uma conta por contador
@@ -515,17 +516,22 @@ Uma vez por dia, às 9h no fuso de Brasília (Q-10):
 #### RF-43 · Termos e consentimento (LGPD)
 
 - **(proposto)** No cadastro, o contador aceita os termos de uso e a política de privacidade. O sistema guarda a data e a versão aceitas.
-- **(proposto)** A política explica que o contador é o controlador dos dados dos clientes e a Agenda Contábil é a operadora.
+- **(proposto)** A política explica que o contador é o controlador dos dados dos clientes e o Neximob é o operador.
 
 #### RF-44 · Exportar e excluir dados (proposto)
 
 - O contador exporta os dados da conta (clientes, cobranças, envios, obrigações) num arquivo.
 - O contador exclui a conta e todos os dados.
 
-#### RF-45 · Sair e recuperar o acesso (proposto)
+#### RF-45 · Sair e recuperar o acesso
 
 - Sair da conta no aparelho atual.
-- Recuperar o acesso pelo e-mail.
+- "Esqueci minha senha" envia um link por e-mail, que abre uma tela para criar uma senha nova (ADR-0008).
+- Trocar a senha exige login recente.
+
+**Critérios de aceite**
+- Dado um cadastro novo, quando o contador tenta entrar antes de confirmar o e-mail, então o acesso é recusado com a orientação de confirmar o e-mail.
+- Dado que o contador pediu a recuperação, quando abre o link recebido e cria uma senha nova, então entra com a senha nova e a antiga deixa de funcionar.
 
 ### 3.7 Assinatura
 
@@ -567,7 +573,7 @@ As regras marcadas como **invioláveis** estão na seção 6 do Briefing e não 
 | RN-16 | Cliente inativo não gera cobrança, não recebe lembrete e não entra no checklist | Não | Decisão (Q-15) | RF-06, RF-34 |
 | RN-17 | Cliente sem e-mail e sem telefone não recebe envio automático, e o app avisa o contador | Não | Proposto | RF-05, RF-34 |
 | RN-18 | Cobrança não paga de mês anterior continua em aberto: aparece no mês corrente, conta em "Clientes em atraso" e continua recebendo lembretes até ser paga | Não | Decisão (Q-02) | RF-03, RF-11, RF-18, RF-34 |
-| RN-19 | O cliente recebe no máximo uma mensagem por dia em cada canal. A cobrança do mês e as pendências vão juntas, com o total em aberto. Se só restam pendências, a mensagem sai uma vez por mês, no dia do vencimento | Não | Proposto (mecanismo da Q-02) | RF-14, RF-16, RF-34 |
+| RN-19 | O cliente recebe no máximo uma mensagem por dia em cada canal. A cobrança do mês e as pendências vão juntas, com o total em aberto. Se só restam pendências, a mensagem sai uma vez por mês, no dia do vencimento | Não | Decisão (Q-02) | RF-14, RF-16, RF-34 |
 | RN-20 | O app não guarda CPF nem CNPJ dos clientes. Esses dados ficam só no provedor de Pix | Não | Decisão (Q-12) | RF-17, RNF-16 |
 | RN-21 | Cliente cadastrado depois do dia de vencimento do mês corrente: o contador escolhe se a cobrança começa neste mês (já atrasada) ou no próximo; o padrão é o próximo. As obrigações entram no checklist desde o mês do cadastro | Não | Decisão (Q-01) | RF-01, RF-02 |
 | RN-22 | Se a rotina diária deixar de rodar, a execução seguinte envia, para cada cliente, só o passo mais recente que ficou para trás; os anteriores ficam registrados como pulados | Não | Decisão (Q-09) | RF-34, RF-35 |
@@ -660,6 +666,7 @@ erDiagram
         text email UK
         text chave_pix
         text plano
+        text texto_pendencia "texto de pendência do e-mail"
     }
     CLIENTES {
         uuid id PK
@@ -754,7 +761,7 @@ erDiagram
 
 | Tabela | Campos principais (fonte) | Restrições e campos acrescentados |
 |---|---|---|
-| `contadores` | id, nome, e-mail, chave Pix, plano | `id` é o id do usuário no Supabase Auth (ADR-0004). E-mail único. Acrescentar **(proposto)**: data do aceite dos termos e versão aceita (RF-43), data de criação |
+| `contadores` | id, nome, e-mail, chave Pix, plano | `id` é o id do usuário no Supabase Auth (ADR-0004). E-mail único. Acrescentado: `texto_pendencia`, o texto de pendência do e-mail (Q-02, RF-31). Acrescentar **(proposto)**: data do aceite dos termos e versão aceita (RF-43), data de criação |
 | `clientes` | id, contador, nome, tipo (MEI/Simples/PF), honorário, dia de vencimento (1–28), telefone, e-mail, ativo | `dia_vencimento` entre 1 e 28 (RN-07). `ativo` começa verdadeiro. Valores em reais com duas casas. Acrescentados: `cobranca_inicio`, mês da primeira cobrança (RN-21); `canais`, canais de envio, por padrão todos com contato (Q-05); **(proposto)** `email_situacao`, atualizada pelos avisos do Resend (RN-24); `provedor_cliente_id`, identificador do pagador no provedor de Pix. **Nunca** CPF ou CNPJ (RN-20, ADR-0003) |
 | `cobrancas` | id, cliente, mês, valor, extra, motivo do extra, pago em, forma | Uma cobrança por cliente e mês. `valor` guarda o honorário daquele mês (RN-14); `extra` começa em zero; valor total = `valor` + `extra` (RN-01). Acrescentado no esquema físico: `vencimento`, a data de vencimento guardada na cobrança, para que mudar o dia de vencimento do cliente não altere cobranças antigas (RN-14). Acrescentar **(proposto)**: identificador da cobrança no provedor de Pix (RF-17) |
 | `envios` | id, cobrança, passo da régua, canal, enviado em, status | Ajustado pela Q-02: o envio é do cliente num mês da régua (`cliente_id`, `mes`), e as cobranças incluídas ficam em `envio_cobrancas`. É também a fila da rotina (ADR-0005): um registro por cliente, mês, passo e canal automático, garantido por chave única (RN-13); as novas tentativas atualizam o mesmo registro. Acrescentados: `tentativas`, `proxima_tentativa_em`, `erro` e o identificador da mensagem no provedor |
@@ -839,13 +846,15 @@ erDiagram
 | # | Questão | Decisão | Data | Onde |
 |---|---|---|---|---|
 | — | Stack da versão final | Next.js + Supabase (Postgres e Auth) | 07/11/2026 | ADR-0001 |
-| Q-02 | Cobranças não pagas de meses anteriores: aparecem no mês corrente? Continuam recebendo lembretes? | Sim. Aparecem no mês corrente, contam em "Clientes em atraso" e continuam recebendo lembretes até serem pagas. **O mecanismo (mensagem única com o total em aberto, RN-19) está proposto e aguarda confirmação** | 07/11/2026 | RN-18, RN-19, seção 4.3 |
+| Q-02 | Cobranças não pagas de meses anteriores: aparecem no mês corrente? Continuam recebendo lembretes? | Sim. Aparecem no mês corrente, contam em "Clientes em atraso" e continuam recebendo lembretes até serem pagas. Mecanismo, confirmado em 11/11/2026: uma mensagem só, com o mês e o total em aberto; com só pendências, uma mensagem por mês, no dia do vencimento (RN-19) | 07/11/2026 | RN-18, RN-19, seção 4.3 |
 | Q-04 | Os textos da régua são editáveis, mas o WhatsApp só envia modelos aprovados. Como conciliar? | Texto livre só no e-mail. No WhatsApp, modelos fixos da plataforma, aprovados na Meta, com os campos como variáveis | 07/11/2026 | ADR-0002 |
 | Q-12 | O provedor de Pix exige o CPF ou CNPJ do pagador? | O app não guarda CPF nem CNPJ em nenhuma hipótese. Quando o provedor exigir, o dado vai direto para ele, e o app guarda só o identificador do pagador | 07/11/2026 | ADR-0003, RN-20 |
 | — | Isolamento dos dados entre contadores | RLS em todas as tabelas, `contador_id` em todas as tabelas de dados, chaves estrangeiras compostas e testes com dois contadores | 09/11/2026 | ADR-0004 |
 | — | Rotina diária | Supabase Cron em duas etapas: planejar no banco e enviar por Edge Function, com a tabela `envios` como fila | 09/11/2026 | ADR-0005 |
 | — | Hospedagem, região e linguagem | Next.js na Cloudflare (Workers, adaptador OpenNext), Supabase em São Paulo, TypeScript | 09/11/2026 | ADR-0006 |
 | — | Provedor de e-mail | Resend, para os e-mails de login (SMTP) e para os lembretes (API) | 09/11/2026 | ADR-0007 |
+| — | Nome do produto | Neximob | 11/11/2026 | PRD, seção 12.1 |
+| — | Método de login | E-mail e senha, com confirmação do e-mail e recuperação por e-mail | 11/11/2026 | ADR-0008 |
 | Q-01 | Cliente cadastrado depois do dia de vencimento do mês | O cadastro pergunta se a cobrança começa neste mês ou no próximo; o padrão é o próximo | 09/11/2026 | RN-21, RF-01 |
 | Q-03 | A mensagem manual usa o texto de um passo desligado? | Sim: desligar um passo só impede o envio automático | 09/11/2026 | RN-03, RF-14 |
 | Q-05 | Por qual canal cada cliente recebe? | Todos os canais com contato cadastrado, com opção de escolher por cliente | 09/11/2026 | RF-05, RF-16 |
@@ -861,7 +870,7 @@ erDiagram
 
 ### 9.2 Em aberto
 
-O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confirmação. As três questões abaixo ficam para a discussão das integrações, antes da F4.
+As três questões abaixo ficam para a discussão das integrações, antes da F4.
 
 | # | Questão | Sugestão | Afeta |
 |---|---|---|---|
@@ -882,3 +891,4 @@ O **mecanismo** de pendências da Q-02 (RN-19 e seção 4.3) ainda aguarda confi
 | 1.4 | 09/11/2026 | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
 | 1.5 | 09/11/2026 | E-mail com o Resend (ADR-0007); nova RN-24 e campo `email_situacao` |
 | 1.6 | 11/11/2026 | Esquema físico em `supabase/migrations/`: `cobrancas.vencimento` e chaves únicas começando por `contador_id` |
+| 1.7 | 11/11/2026 | Nome do produto: Neximob. Login por e-mail e senha (ADR-0008). Mecanismo das pendências confirmado (RN-19) e `contadores.texto_pendencia` |

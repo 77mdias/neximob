@@ -1,14 +1,14 @@
-# Arquitetura: Agenda Contábil
+# Arquitetura: Neximob
 
 **Documentação técnica**
 
 | | |
 |---|---|
-| **Produto** | Agenda Contábil (nome de trabalho) |
+| **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.0 |
+| **Versão** | 1.1 |
 | **Data** | 11/11/2026 |
-| **Base** | [ADR-0001 a ADR-0007](./adr/README.md) e [SRS](./SRS.md) 1.5 |
+| **Base** | [ADR-0001 a ADR-0008](./adr/README.md) e [SRS](./SRS.md) 1.7 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) |
 
 Este documento junta as decisões de arquitetura numa visão só: o que existe, onde roda, quem acessa o quê e como o sistema é testado e publicado. O motivo de cada escolha está na ADR indicada. Itens marcados como **(proposto)** ainda não foram decididos.
@@ -21,7 +21,7 @@ Este documento junta as decisões de arquitetura numa visão só: o que existe, 
 |---|---|---|
 | Interface e rotas de servidor | Next.js em TypeScript, na **Cloudflare Workers** (adaptador OpenNext) | 0001, 0006 |
 | Banco de dados | **Postgres do Supabase**, região de São Paulo | 0001, 0006 |
-| Login | **Supabase Auth**, por e-mail | 0001 |
+| Login | **Supabase Auth**, com e-mail e senha, confirmação e recuperação por e-mail | 0001, 0008 |
 | Isolamento entre contadores | **RLS** em todas as tabelas, chaves compostas e permissões por coluna | 0004 |
 | Rotina diária | **Supabase Cron** + função no banco + Edge Function | 0005 |
 | E-mail | **Resend**: SMTP para o login, API para os lembretes | 0007 |
@@ -146,6 +146,7 @@ O esquema está em [`supabase/migrations/`](../supabase/migrations), aplicado em
 | `20261111120100_acesso_rls.sql` | RLS e permissões por tabela e por coluna |
 | `20261111120200_funcoes_e_gatilhos.sql` | Regras de negócio no banco: situação da cobrança, cobranças do mês, conta nova, RN-14 e RN-24 |
 | `20261111120300_calendario_padrao_2026.sql` | Calendário fiscal padrão de 2026 (datas de exemplo, a conferir) |
+| `20261111130000_texto_pendencia.sql` | Texto de pendência do e-mail, editável pelo contador (Q-02) |
 
 **Decisões de desenho**
 
@@ -161,7 +162,7 @@ O esquema está em [`supabase/migrations/`](../supabase/migrations), aplicado em
 | Gatilho na criação do usuário | Conta nova já nasce com perfil, régua padrão (RN-08) e calendário padrão (Q-08) |
 | Gatilho na mudança de honorário ou de dia de vencimento | Aplica a RN-14 só nas cobranças em aberto do mês corrente em diante |
 
-**Ainda fora do esquema:** a tabela `rotina_execucoes` e a função de planejamento da rotina (F3, ADR-0005), o texto de pendência (depende da confirmação da Q-02) e os campos do Pix e do WhatsApp (F4).
+**Ainda fora do esquema:** a tabela `rotina_execucoes` e a função de planejamento da rotina (F3, ADR-0005) e os campos do Pix e do WhatsApp (F4).
 
 ### 4.2 Quem pode o quê
 
@@ -169,7 +170,7 @@ O contador acessa o banco com o papel `authenticated`. A RLS limita as linhas à
 
 | Tabela | O contador lê | O contador grava | Só o sistema |
 |---|---|---|---|
-| `contadores` | O próprio perfil | Nome, chave Pix, aceite dos termos | Plano; e-mail (vem do login) |
+| `contadores` | O próprio perfil | Nome, chave Pix, texto de pendência, aceite dos termos | Plano; e-mail (vem do login) |
 | `clientes` | Os próprios | Cria, edita e exclui | Situação do e-mail; id do pagador no provedor de Pix |
 | `cobrancas` | As próprias | Cria (pelo `garantir_cobrancas`), dá baixa, ajusta o extra | Id da cobrança no provedor de Pix. Não há exclusão avulsa: as cobranças só saem junto com o cliente |
 | `regua` | A própria | Liga, desliga e edita o texto | Cria os 4 passos na conta nova |
@@ -188,7 +189,7 @@ Os testes ficam em [`supabase/tests/database/`](../supabase/tests/database) e us
 | Arquivo | Testes | O que cobre |
 |---|---|---|
 | `01_isolamento_rls.test.sql` | 37 | Dois contadores: B não lê, não altera, não apaga e não cria dados de A em nenhuma tabela; não descobre a existência de dados de A; campos do sistema protegidos; visitante sem login bloqueado; toda tabela com RLS |
-| `02_regras_de_negocio.test.sql` | 36 | Conta nova (RN-08, RF-42), cadastro (RN-07), cobranças do mês (RF-02, RN-21), RN-14, extra e baixa (RF-12, RF-13, RN-01), situação (RN-02), envios (RN-13), e-mail corrigido (RN-24), exclusão em cascata (Q-15) |
+| `02_regras_de_negocio.test.sql` | 38 | Conta nova (RN-08, RF-42), texto de pendência (Q-02), cadastro (RN-07), cobranças do mês (RF-02, RN-21), RN-14, extra e baixa (RF-12, RF-13, RN-01), situação (RN-02), envios (RN-13), e-mail corrigido (RN-24), exclusão em cascata (Q-15) |
 
 **Como rodar**
 
@@ -294,11 +295,10 @@ Os preços mudam. Conferir na hora de contratar.
 
 | Item | Situação | Quando |
 |---|---|---|
-| Método de login | **(proposto)** E-mail e senha, com confirmação do e-mail e recuperação por e-mail; link mágico pode vir depois | Antes de implementar o login (F2) |
-| Nome final e domínio | Define o nome no código e o domínio dos e-mails | Antes da F2 (nome) e da F3 (domínio) |
+| Domínio do Neximob | Registrar e autenticar o domínio de onde saem os e-mails (ADR-0007) | Antes de abrir o cadastro ao público e antes da F3 |
+| CAPTCHA no login e no cadastro | **(proposto)** Cloudflare Turnstile (ADR-0008) | Antes de abrir o cadastro ao público |
 | Textos padrão da régua | O esquema usa textos iniciais. Substituir pelos do protótipo, se forem diferentes | F2 |
 | Datas do calendário padrão de 2026 | Datas de exemplo; conferir com um contador | Antes do uso com dados reais |
-| Mecanismo das pendências (Q-02) | Aguarda confirmação; o texto de pendência ainda não está no esquema | Antes da F3 |
 | Local dos avisos dos provedores | **(proposto)** Edge Functions do Supabase | F3 (e-mail) e F4 |
 | WhatsApp (Q-16) e Pix (Q-17, Q-18) | Em aberto | Antes da F4 |
 | Atualização anual do calendário nas contas | **(proposto)** Automática para obrigações não personalizadas (Q-08) | F5 |
@@ -316,6 +316,7 @@ Os preços mudam. Conferir na hora de contratar.
 | [0005](./adr/0005-rotina-diaria-supabase-cron.md) | Rotina diária | 2, 3.2, 9 |
 | [0006](./adr/0006-hospedagem-cloudflare-supabase-sao-paulo.md) | Cloudflare, São Paulo, TypeScript | 1, 2, 6, 10 |
 | [0007](./adr/0007-email-resend.md) | E-mail com o Resend | 2, 3.3, 5, 10 |
+| [0008](./adr/0008-login-email-e-senha.md) | Login por e-mail e senha | 1, 2, 11 |
 
 ---
 
@@ -324,3 +325,4 @@ Os preços mudam. Conferir na hora de contratar.
 | Versão | Data | Alteração |
 |---|---|---|
 | 1.0 | 11/11/2026 | Primeira versão: componentes, fluxos, esquema físico e testes do banco, chaves, ambientes, publicação, custos e pendências |
+| 1.1 | 11/11/2026 | Nome Neximob; login por e-mail e senha (ADR-0008); texto de pendência no esquema |

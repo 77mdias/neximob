@@ -56,7 +56,7 @@ Os registros técnicos (logs) não trazem o texto dos e-mails, só ids e situaç
 - Clientes com e-mail problemático param de receber, o que protege a reputação do domínio para todos os contadores.
 
 **Negativas e cuidados**
-- **O domínio depende do nome final do produto**, que ainda está em aberto (PRD, seção 12.2). O domínio precisa estar definido e autenticado antes da F3.
+- **O domínio do Neximob ainda precisa ser registrado e autenticado** (PRD, seção 12.2) antes de abrir o cadastro ao público e antes da F3.
 - O plano gratuito do Resend tem limite mensal de envios. Para dimensionar o plano pago, a conta é simples: cada cliente recebe até 4 lembretes por mês. Por exemplo, 100 contadores com 50 clientes dão até 20 mil lembretes por mês, mais os e-mails de login. Conferir os preços na hora de contratar.
 - Domínio novo começa sem reputação. **(proposto)** Começar com poucos contadores na validação ajuda a aquecer o domínio.
 - Dependência de mais um fornecedor. A chamada ao Resend fica isolada na Edge Function de envio, o que facilita uma troca futura (por exemplo, para o Amazon SES).

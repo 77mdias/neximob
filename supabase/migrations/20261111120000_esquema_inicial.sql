@@ -1,4 +1,4 @@
--- Agenda Contábil: esquema inicial (F2)
+-- Neximob: esquema inicial (F2)
 --
 -- Modelo lógico: docs/SRS.md, seção 5.
 -- Isolamento entre contadores: docs/adr/0004-isolamento-por-contador-rls.md

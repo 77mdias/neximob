@@ -1,8 +1,8 @@
-# Agenda Contábil (repositório `neximob`)
+# Neximob
 
 Sistema simples para o contador autônomo ou de escritório pequeno: cadastra o cliente uma vez e o sistema cuida da cobrança mensal dos honorários e do checklist de prazos fiscais.
 
-> "Agenda Contábil" é o nome de trabalho. O nome final ainda está em aberto (PRD, seção 12).
+> Nas fontes originais (Documentação do Produto e Briefing), o produto se chamava "Agenda Contábil"; no protótipo, "Prazo Certo".
 
 ## Documentação
 

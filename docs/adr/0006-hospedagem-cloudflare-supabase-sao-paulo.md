@@ -8,7 +8,7 @@
 ## Contexto
 
 - A ADR-0001 definiu Next.js + Supabase e deixou em aberto onde hospedar o Next.js, em que região criar o Supabase e qual linguagem usar.
-- A sugestão inicial era a Vercel. O plano gratuito da Vercel é só para uso pessoal, não comercial, e a Agenda Contábil é um produto vendido por assinatura (RF-50).
+- A sugestão inicial era a Vercel. O plano gratuito da Vercel é só para uso pessoal, não comercial, e o Neximob é um produto vendido por assinatura (RF-50).
 - Os usuários são contadores no Brasil, e os dados de clientes estão sujeitos à LGPD.
 - A rotina diária roda inteira no Supabase (ADR-0005), então a hospedagem do Next.js não afeta os lembretes.
 

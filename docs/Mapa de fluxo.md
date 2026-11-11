@@ -1,12 +1,12 @@
-# Mapa de fluxo: Agenda Contábil
+# Mapa de fluxo: Neximob
 
 **Telas e caminhos do usuário**
 
 | | |
 |---|---|
-| **Produto** | Agenda Contábil (nome de trabalho) |
+| **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.5, rascunho para validação |
+| **Versão** | 1.6, rascunho para validação |
 | **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -145,7 +145,7 @@ flowchart TD
 
 ### 4.1 Pendências de meses anteriores
 
-Decidido (Q-02): cobranças não pagas de meses anteriores aparecem no mês corrente e continuam recebendo lembretes. O mecanismo abaixo é **(proposto)** e aguarda confirmação: o cliente recebe uma mensagem só, com o mês e as pendências, para que o número de mensagens não cresça a cada mês em aberto (RN-19).
+Decidido (Q-02): cobranças não pagas de meses anteriores aparecem no mês corrente e continuam recebendo lembretes. O cliente recebe uma mensagem só, com o mês e as pendências, para que o número de mensagens não cresça a cada mês em aberto (RN-19).
 
 ```mermaid
 flowchart TD
@@ -267,7 +267,7 @@ flowchart TD
     T3 --> P["Preenche os campos<br/>nome, mês, valor, vencimento, Pix"]
     T0 --> P
     TM --> P
-    P --> PD["Acrescenta as pendências, se houver<br/>(proposto)"]
+    P --> PD["Acrescenta as pendências, se houver"]
     PD --> V["Prévia da mensagem"]
     V --> CP["Copiar"]
     CP --> EXT["Contador envia pelo<br/>WhatsApp ou e-mail dele"]
@@ -343,8 +343,8 @@ sequenceDiagram
 | Situação | Comportamento |
 |---|---|
 | Cliente pagou o mês e não tem pendências | Não envia (RN-09) |
-| Cliente com o mês e pendências em aberto | Uma mensagem só, com o total em aberto (RN-19, proposto) |
-| Cliente pagou o mês, mas tem pendências | Envia só no passo "No dia", com o texto de pendência (RN-18, RN-19, proposto) |
+| Cliente com o mês e pendências em aberto | Uma mensagem só, com o total em aberto (RN-19) |
+| Cliente pagou o mês, mas tem pendências | Envia só no passo "No dia", com o texto de pendência (RN-18, RN-19) |
 | Passo desligado | Não envia |
 | Rotina roda duas vezes no mesmo dia | Não repete o envio: o banco aceita um só registro por cliente, mês, passo e canal (RN-13, ADR-0005) |
 | Cliente pagou entre o planejamento e o envio | Envio cancelado (RN-09, ADR-0005) |
@@ -368,7 +368,7 @@ O provedor de Pix ainda não foi escolhido (Asaas ou similar). O fluxo abaixo é
 sequenceDiagram
     autonumber
     participant CONT as Contador
-    participant APP as Agenda Contábil
+    participant APP as Neximob
     participant PSP as Provedor de Pix
     participant CLI as Cliente do contador
     participant DB as Banco de dados
@@ -528,7 +528,7 @@ flowchart TD
 | Aviso de pagamento Pix repetido | Uma baixa só | RF-17 (proposto) |
 | Valor pago diferente do esperado | Cobrança marcada para revisão | Q-13 |
 | Cliente sem CPF/CNPJ no provedor de Pix | Lembrete com a chave Pix do contador; baixa manual | ADR-0003 |
-| Cliente com vários meses em aberto | Uma mensagem por dia e canal, com o total em aberto | RN-19 (proposto) |
+| Cliente com vários meses em aberto | Uma mensagem por dia e canal, com o total em aberto | RN-19 |
 | Contador desfaz um pagamento | Status recalculado; a régua volta para os passos futuros | RF-12 |
 | Todos os passos da régua desligados | "Sem próximos lembretes" na cobrança | RF-15 (proposto) |
 | Campo desconhecido no texto da régua | Aviso antes de salvar | RF-32 (proposto) |
@@ -568,3 +568,4 @@ flowchart TD
 | 1.3 | 09/11/2026 | Rotina diária em duas etapas, planejar e enviar (ADR-0005) |
 | 1.4 | 09/11/2026 | E-mail devolvido ou marcado como spam (RN-24, ADR-0007) |
 | 1.5 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |
+| 1.6 | 11/11/2026 | Nome do produto: Neximob. Mecanismo das pendências confirmado |

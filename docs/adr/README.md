@@ -13,6 +13,7 @@ Cada decisão de arquitetura ou de produto com impacto técnico fica registrada 
 | [0005](./0005-rotina-diaria-supabase-cron.md) | Rotina diária com Supabase Cron, em duas etapas | Aceita | 09/11/2026 |
 | [0006](./0006-hospedagem-cloudflare-supabase-sao-paulo.md) | Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript | Aceita | 09/11/2026 |
 | [0007](./0007-email-resend.md) | E-mail com o Resend (login e lembretes) | Aceita | 09/11/2026 |
+| [0008](./0008-login-email-e-senha.md) | Login por e-mail e senha, com confirmação e recuperação | Aceita | 11/11/2026 |
 
 **Próximas decisões:** WhatsApp e Pix (antes da F4) e esquema físico do banco (antes da F2).
 

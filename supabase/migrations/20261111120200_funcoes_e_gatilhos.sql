@@ -1,4 +1,4 @@
--- Agenda Contábil: funções e gatilhos (F2)
+-- Neximob: funções e gatilhos (F2)
 --
 -- As regras de negócio que precisam valer para qualquer cliente do banco
 -- (tela, rotina diária, testes) ficam aqui, num lugar só.

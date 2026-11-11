@@ -1,12 +1,12 @@
-# PRD: Agenda Contábil
+# PRD: Neximob
 
 **Documento de Requisitos do Produto**
 
 | | |
 |---|---|
-| **Produto** | Agenda Contábil (nome de trabalho; ver seção 12) |
+| **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.6, rascunho para validação |
+| **Versão** | 1.7, rascunho para validação |
 | **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -17,7 +17,7 @@
 
 ## 1. Visão geral
 
-A Agenda Contábil é um sistema simples para o **contador autônomo ou de escritório pequeno**. O contador cadastra cada cliente uma vez e, a partir daí, o sistema cuida de duas rotinas mensais:
+O Neximob é um sistema simples para o **contador autônomo ou de escritório pequeno**. O contador cadastra cada cliente uma vez e, a partir daí, o sistema cuida de duas rotinas mensais:
 
 - **Cobrança dos honorários.** Calcula o valor do mês, mostra quem já pagou e envia lembretes antes e depois do vencimento, com a chave Pix.
 - **Prazos fiscais.** Monta o checklist das obrigações de cada cliente (DAS-MEI, DAS, DEFIS, DASN-SIMEI e IRPF) e mostra quantos clientes já foram feitos.
@@ -79,7 +79,7 @@ O contador autônomo controla honorários e prazos em planilha, caderno e WhatsA
 
 ## 4. Posicionamento
 
-Leve e barato, o oposto dos sistemas contábeis grandes como Makro, Nibo e Questor. A Agenda Contábil não compete em quantidade de funções: é tudo numa tela só, para quem trabalha sozinho.
+Leve e barato, o oposto dos sistemas contábeis grandes como Makro, Nibo e Questor. O Neximob não compete em quantidade de funções: é tudo numa tela só, para quem trabalha sozinho.
 
 ### Princípios de produto
 
@@ -248,7 +248,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 |---|---|---|
 | O contador não adota o app e continua cobrando pelo WhatsApp | Produto sem uso | Validar antes de programar (F1); primeiro acesso em poucos minutos; régua ligada por padrão |
 | Bloqueio do número de WhatsApp | Cobrança para de chegar e o contador perde o número | Só a API oficial, com modelos fixos revisados e aprovados (RNF-04, ADR-0002); começar pelo e-mail |
-| Excesso de mensagens para cliente com vários meses em aberto | Incômodo, denúncias e risco ao número | **(proposto)** Uma mensagem por dia e canal, com o total em aberto (RN-19) |
+| Excesso de mensagens para cliente com vários meses em aberto | Incômodo, denúncias e risco ao número | Uma mensagem por dia e canal, com o total em aberto (RN-19) |
 | Datas fiscais erradas ou desatualizadas | Guia esquecida, perda de confiança | Calendário editável (RF-23); datas conferidas por um contador antes de publicar |
 | Incidente com dados de terceiros | Dano ao cliente e sanções da LGPD | Login seguro, isolamento entre contas, consentimento e coleta mínima de dados; CPF e CNPJ nunca gravados no app (RNF-05, RNF-06, ADR-0003) |
 | Lembrete enviado a quem já pagou, porque a baixa manual atrasou | Constrangimento com o cliente | Só dispara para quem não pagou (RN-09); baixa automática por Pix (RF-17); **(proposto)** texto com "se já pagou, desconsidere" |
@@ -273,6 +273,9 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Rotina diária | Supabase Cron em duas etapas: planejar no banco às 9h e enviar em lotes, sem duplicar mensagens | 09/11/2026 | ADR-0005 |
 | Hospedagem e região | Next.js na Cloudflare (o plano gratuito da Vercel não permite uso comercial); Supabase em São Paulo; TypeScript | 09/11/2026 | ADR-0006 |
 | Provedor de e-mail | Resend, para os e-mails de login e para os lembretes | 09/11/2026 | ADR-0007 |
+| Nome do produto | **Neximob**. Nas fontes, o produto se chamava Agenda Contábil; no protótipo, Prazo Certo | 11/11/2026 | — |
+| Método de login | E-mail e senha, com confirmação do e-mail e recuperação por e-mail | 11/11/2026 | ADR-0008 |
+| Mecanismo das pendências | Uma mensagem por dia e canal, com o mês e o total em aberto; só pendências: uma mensagem por mês, no dia do vencimento | 11/11/2026 | SRS: RN-19, seção 4.3 |
 | Questões de regra Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15 | Adotadas as sugestões do SRS (por exemplo: lembretes às 9h, inativar cliente por padrão, competência mostrada nas obrigações) | 09/11/2026 | SRS, seção 9.1 |
 
 ### 12.2 Decisões em aberto
@@ -285,10 +288,9 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Número do WhatsApp | O número de cada contador ou um número único da plataforma (SRS, Q-16) | Antes da F4 |
 | Conta do Pix | O dinheiro cai na conta do contador ou numa conta da plataforma (SRS, Q-18) | Antes da F4 |
 | Página do cliente | Se o cliente do contador terá uma página para ver e pagar o honorário | Antes da F4 |
-| Nome final e domínio | Os documentos usam "Agenda Contábil", o protótipo ainda usa "Prazo Certo" na chave de armazenamento e o repositório se chama `neximob`. O nome define também o domínio de onde saem os e-mails (ADR-0007) | **(proposto)** Antes da F2, para o código novo já nascer com o nome final e o domínio estar autenticado antes da F3 |
+| Domínio | Registrar e autenticar o domínio do Neximob, de onde saem os e-mails (ADR-0007) | Antes de abrir o cadastro ao público e antes da F3 |
 | Fase do histórico (RF-18) | As fontes listam o item, mas não o colocam em nenhuma fase | Planejamento da F3 |
 | Mais de um usuário por escritório | Na F2, uma conta por contador (Q-14); reavaliar com o resultado da validação | Depois da F1 |
-| Mecanismo das pendências | Proposto: uma mensagem por dia e canal, com o mês e o total em aberto (SRS, RN-19) | Antes da F3 |
 | Metas numéricas das métricas | Ainda não definidas | Depois da F1 |
 
 As questões de regra e de comportamento (cliente cadastrado depois do vencimento, prazos em fim de semana etc.) estão na seção 9 do [SRS](./SRS.md). As decisões de arquitetura ficam em [docs/adr](./adr/README.md).
@@ -350,3 +352,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | 1.4 | 09/11/2026 | Decisão: hospedagem na Cloudflare, Supabase em São Paulo e TypeScript (ADR-0006) |
 | 1.5 | 09/11/2026 | Decisão: e-mail com o Resend (ADR-0007) |
 | 1.6 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |
+| 1.7 | 11/11/2026 | Nome do produto: Neximob. Decisões: login por e-mail e senha (ADR-0008) e mecanismo das pendências |

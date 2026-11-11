@@ -1,4 +1,4 @@
--- Agenda Contábil: calendário fiscal padrão de 2026 (RF-20, Q-08)
+-- Neximob: calendário fiscal padrão de 2026 (RF-20, Q-08)
 --
 -- ATENÇÃO: datas de exemplo, como no protótipo. Precisam ser conferidas por
 -- um contador antes do lançamento. O app não ajusta sozinho prazos que caem

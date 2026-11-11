@@ -1,4 +1,4 @@
--- Agenda Contábil: regras de acesso (ADR-0004)
+-- Neximob: regras de acesso (ADR-0004)
 --
 -- Duas camadas:
 --   1. RLS: o contador só vê e altera as linhas com o próprio contador_id.
