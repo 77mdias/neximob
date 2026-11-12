@@ -77,3 +77,15 @@ flowchart LR
 - A função de planejamento roda sem RLS. Ela precisa de testes com dois contadores, como as tabelas (ADR-0004).
 - As Edge Functions têm limite de tempo por execução; por isso o envio é feito em lotes pequenos.
 - O mesmo desenho servirá para o WhatsApp na F4: muda só o provedor chamado na etapa 2.
+
+## Complemento (12/11/2026): como foi implementado
+
+A implementação está em `supabase/migrations/20261112120100_lembretes.sql`, `20261112120300_rotina_diaria.sql`, `supabase/functions/` e `supabase/setup/agendar_rotina.sql`. Detalhes que entraram na decisão:
+
+1. **A regra do alvo é uma função só**, `lembretes_do_dia(dia)`. A rotina e a tela ("próximo lembrete", RF-15) usam a mesma função; a proposta virou implementação.
+2. **As funções da etapa de envio (`rotina_*`) ficam no esquema `public`**, para a Edge Function chamar pela API, mas só o papel `service_role` pode executá-las. O planejamento continua no esquema `interno`, fora da API.
+3. **O agendamento não é uma migração.** Ele usa segredos do Vault e a URL de cada ambiente, então fica num script rodado uma vez por ambiente (`supabase/setup/agendar_rotina.sql`).
+4. **As funções chamadas pelo Cron não usam o JWT do Supabase** (`verify_jwt = false`): elas conferem um segredo próprio (`NEXIMOB_SEGREDO_CRON`), comparado sem vazar tempo.
+5. **A tabela `envios` ganhou `tipo` (`passo` ou `pendencia`) e `reservado_em`**, usado para devolver à fila um envio que ficou parado em "enviando".
+6. **O laço da etapa de envio fica num módulo separado** (`_shared/fila.ts`), testado com o banco e o Resend simulados.
+

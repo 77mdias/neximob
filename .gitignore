@@ -1,0 +1,10 @@
+# Segredos
+.env
+.env.*
+!.env.example
+
+# Dependências e builds
+node_modules/
+.next/
+.open-next/
+.wrangler/

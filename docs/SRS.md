@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.7, rascunho para validação |
-| **Data** | 11/11/2026 |
+| **Versão** | 1.8, rascunho para validação |
+| **Data** | 12/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
-| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [API](./API.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
 
 ---
 
@@ -892,3 +892,4 @@ As três questões abaixo ficam para a discussão das integrações, antes da F4
 | 1.5 | 09/11/2026 | E-mail com o Resend (ADR-0007); nova RN-24 e campo `email_situacao` |
 | 1.6 | 11/11/2026 | Esquema físico em `supabase/migrations/`: `cobrancas.vencimento` e chaves únicas começando por `contador_id` |
 | 1.7 | 11/11/2026 | Nome do produto: Neximob. Login por e-mail e senha (ADR-0008). Mecanismo das pendências confirmado (RN-19) e `contadores.texto_pendencia` |
+| 1.8 | 12/11/2026 | Backend das fases F2 e F3 implementado; o contrato está em [API](./API.md) |

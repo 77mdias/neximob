@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.1 |
+| **Versão** | 1.2 |
 | **Data** | 11/11/2026 |
 | **Base** | [ADR-0001 a ADR-0008](./adr/README.md) e [SRS](./SRS.md) 1.7 |
-| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) |
+| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [API](./API.md) |
 
 Este documento junta as decisões de arquitetura numa visão só: o que existe, onde roda, quem acessa o quê e como o sistema é testado e publicado. O motivo de cada escolha está na ADR indicada. Itens marcados como **(proposto)** ainda não foram decididos.
 
@@ -53,7 +53,7 @@ flowchart LR
         API["API do banco<br/>com RLS"]
         DB[("Postgres<br/>tabelas, regras e funções")]
         CRON["Cron<br/>9h e a cada poucos minutos"]
-        EF["Edge Functions<br/>enviar lembretes<br/>avisos do Resend"]
+        EF["Edge Functions<br/>enviar-lembretes, avisos-email<br/>alerta-rotina, excluir-conta"]
     end
 
     RES["Resend<br/>e-mail"]
@@ -77,10 +77,12 @@ flowchart LR
 |---|---|---|---|
 | **Next.js** | Cloudflare Workers | Telas (resumo do mês, abas, cadastro), ações do contador. Sempre com a sessão do contador: a RLS vale em toda consulta | 0001, 0006 |
 | **Supabase Auth** | Supabase | Cadastro, confirmação de e-mail, login e recuperação de acesso. E-mails pelo SMTP do Resend | 0001, 0007 |
-| **Postgres** | Supabase | Dados, RLS, restrições, funções (`garantir_cobrancas`, `status_cobranca`) e gatilhos (conta nova, RN-14, RN-24) | 0004 |
+| **Postgres** | Supabase | Dados, RLS, restrições, gatilhos (conta nova, RN-14, RN-24), as funções que a tela chama (resumo, cobranças, obrigações, mensagens; ver [API](./API.md)) e o planejamento da rotina diária | 0004, 0005 |
 | **Supabase Cron** | Supabase | 9h de Brasília: planejar o dia. A cada poucos minutos: chamar o envio. 9h30: conferir se a rotina rodou | 0005 |
-| **Edge Function de envio** | Supabase | Pegar envios pendentes em lotes, conferir se a cobrança continua em aberto e chamar o Resend | 0005, 0007 |
-| **Edge Function de avisos do e-mail** **(proposto)** | Supabase | Receber os avisos do Resend (entregue, devolvido, spam), conferir a assinatura e atualizar o envio e a situação do e-mail | 0007 |
+| **Edge Function `enviar-lembretes`** | Supabase | Pegar envios pendentes em lotes, conferir se a cobrança continua em aberto e chamar o Resend | 0005, 0007 |
+| **Edge Function `avisos-email`** | Supabase | Receber os avisos do Resend (entregue, devolvido, spam, falhou), conferir a assinatura e atualizar o envio e a situação do e-mail | 0007 |
+| **Edge Function `alerta-rotina`** | Supabase | Às 9h30, conferir se a rotina rodou e mandar alerta por e-mail se não | 0005 |
+| **Edge Function `excluir-conta`** | Supabase | Excluir a conta do contador logado, com todos os dados (RF-44) | 0004 |
 | **Resend** | Externo | Entregar os e-mails de login e os lembretes | 0007 |
 
 ---
@@ -113,7 +115,7 @@ sequenceDiagram
 
 Detalhada na [ADR-0005](./adr/0005-rotina-diaria-supabase-cron.md) e no [Mapa de fluxo](./Mapa%20de%20fluxo.md), seção 8. Resumo: às 9h, uma função no banco cria as cobranças que faltam e grava os lembretes do dia como envios `pendente`; a cada poucos minutos, a Edge Function de envio processa a fila em lotes.
 
-### 3.3 Aviso do Resend (proposto)
+### 3.3 Aviso do Resend
 
 ```mermaid
 sequenceDiagram
@@ -147,6 +149,10 @@ O esquema está em [`supabase/migrations/`](../supabase/migrations), aplicado em
 | `20261111120200_funcoes_e_gatilhos.sql` | Regras de negócio no banco: situação da cobrança, cobranças do mês, conta nova, RN-14 e RN-24 |
 | `20261111120300_calendario_padrao_2026.sql` | Calendário fiscal padrão de 2026 (datas de exemplo, a conferir) |
 | `20261111130000_texto_pendencia.sql` | Texto de pendência do e-mail, editável pelo contador (Q-02) |
+| `20261112120000_mensagens.sql` | Formatação e montagem das mensagens, prévia e textos padrão (RF-14, RF-31 a RF-33) |
+| `20261112120100_lembretes.sql` | Cálculo dos lembretes de cada dia e do próximo lembrete (RF-15, SRS seção 4.3) |
+| `20261112120200_consultas_da_tela.sql` | Resumo, cobranças, obrigações, pagamento, envio manual, termos e exportação |
+| `20261112120300_rotina_diaria.sql` | Planejamento da rotina, fila de envio, resultados, avisos do e-mail e saúde (ADR-0005) |
 
 **Decisões de desenho**
 
@@ -162,7 +168,7 @@ O esquema está em [`supabase/migrations/`](../supabase/migrations), aplicado em
 | Gatilho na criação do usuário | Conta nova já nasce com perfil, régua padrão (RN-08) e calendário padrão (Q-08) |
 | Gatilho na mudança de honorário ou de dia de vencimento | Aplica a RN-14 só nas cobranças em aberto do mês corrente em diante |
 
-**Ainda fora do esquema:** a tabela `rotina_execucoes` e a função de planejamento da rotina (F3, ADR-0005) e os campos do Pix e do WhatsApp (F4).
+**Ainda fora do esquema:** os campos e as funções do Pix e do WhatsApp (F4) e da assinatura (F5).
 
 ### 4.2 Quem pode o quê
 
@@ -182,6 +188,8 @@ O contador acessa o banco com o papel `authenticated`. A RLS limita as linhas à
 
 Visitante sem login (`anon`) não acessa nenhuma tabela, view ou função.
 
+**Funções.** As funções da tela rodam com a permissão do contador, então a RLS vale dentro delas. As funções `rotina_*` só podem ser executadas pela chave secreta (`service_role`), usada pelas Edge Functions. O planejamento fica no esquema `interno`, que não é exposto pela API.
+
 ### 4.3 Testes do banco
 
 Os testes ficam em [`supabase/tests/database/`](../supabase/tests/database) e usam pgTAP, o framework de testes do Postgres que a CLI do Supabase roda.
@@ -190,12 +198,18 @@ Os testes ficam em [`supabase/tests/database/`](../supabase/tests/database) e us
 |---|---|---|
 | `01_isolamento_rls.test.sql` | 37 | Dois contadores: B não lê, não altera, não apaga e não cria dados de A em nenhuma tabela; não descobre a existência de dados de A; campos do sistema protegidos; visitante sem login bloqueado; toda tabela com RLS |
 | `02_regras_de_negocio.test.sql` | 38 | Conta nova (RN-08, RF-42), texto de pendência (Q-02), cadastro (RN-07), cobranças do mês (RF-02, RN-21), RN-14, extra e baixa (RF-12, RF-13, RN-01), situação (RN-02), envios (RN-13), e-mail corrigido (RN-24), exclusão em cascata (Q-15) |
+| `03_mensagens.test.sql` | 30 | Formatação, campos, pendências no singular e no plural, mensagem de pendência, prévia, textos padrão |
+| `04_consultas_da_tela.test.sql` | 34 | Lista de cobranças (ordem e filtros), resumo, obrigações e competência, checklist, botão Cobrar, pagamento, extra, termos, exportação |
+| `05_rotina_diaria.test.sql` | 36 | Planejamento, passos que caem em outro mês, recuperação de dias perdidos, cobrança paga, pendências, fila, novas tentativas, avisos do e-mail, saúde e permissões |
+
+As Edge Functions têm 21 testes em Deno (`supabase/functions/_shared/*_test.ts`): assinatura dos avisos (com o vetor oficial de exemplo do Svix), envio pelo Resend, remetente, CORS e o laço da fila de envio.
 
 **Como rodar**
 
 ```bash
 supabase start      # sobe o Supabase local (precisa de Docker)
 supabase test db    # aplica as migrações e roda os testes
+deno test supabase/functions/_shared   # testes das Edge Functions
 ```
 
 ---
@@ -211,6 +225,8 @@ supabase test db    # aplica as migrações e roda os testes
 | Segredo de assinatura dos avisos do Resend | Segredos das Edge Functions | Edge Function de avisos |
 | Segredo para o Cron chamar a Edge Function | Vault do Supabase | Supabase Cron (ADR-0005) |
 | Chaves de WhatsApp e Pix | Segredos das Edge Functions **(proposto)** | F4 |
+
+As variáveis das Edge Functions estão listadas em [`supabase/functions/.env.example`](../supabase/functions/.env.example). O arquivo com os valores reais fica fora do Git.
 
 **Regras**
 - Nenhuma chave no código nem no repositório. Arquivos `.env` locais ficam fora do Git.
@@ -242,7 +258,8 @@ neximob/
     ├── config.toml          configuração do Supabase local (CLI)
     ├── migrations/          esquema do banco, versionado
     ├── tests/database/      testes pgTAP
-    └── functions/           Edge Functions (a partir da F3)
+    ├── functions/           Edge Functions e o módulo compartilhado (_shared)
+    └── setup/               agendamento da rotina diária, por ambiente
 ```
 
 **(proposto)** O app Next.js entra na raiz do repositório na F2, com a configuração do OpenNext e do Wrangler (CLI da Cloudflare) ao lado.
@@ -299,7 +316,7 @@ Os preços mudam. Conferir na hora de contratar.
 | CAPTCHA no login e no cadastro | **(proposto)** Cloudflare Turnstile (ADR-0008) | Antes de abrir o cadastro ao público |
 | Textos padrão da régua | O esquema usa textos iniciais. Substituir pelos do protótipo, se forem diferentes | F2 |
 | Datas do calendário padrão de 2026 | Datas de exemplo; conferir com um contador | Antes do uso com dados reais |
-| Local dos avisos dos provedores | **(proposto)** Edge Functions do Supabase | F3 (e-mail) e F4 |
+| Local dos avisos dos provedores | E-mail: Edge Function `avisos-email`, implementada. WhatsApp e Pix: **(proposto)** também em Edge Functions | F4 |
 | WhatsApp (Q-16) e Pix (Q-17, Q-18) | Em aberto | Antes da F4 |
 | Atualização anual do calendário nas contas | **(proposto)** Automática para obrigações não personalizadas (Q-08) | F5 |
 
@@ -326,3 +343,4 @@ Os preços mudam. Conferir na hora de contratar.
 |---|---|---|
 | 1.0 | 11/11/2026 | Primeira versão: componentes, fluxos, esquema físico e testes do banco, chaves, ambientes, publicação, custos e pendências |
 | 1.1 | 11/11/2026 | Nome Neximob; login por e-mail e senha (ADR-0008); texto de pendência no esquema |
+| 1.2 | 12/11/2026 | Backend das fases F2 e F3: funções da tela, rotina diária, Edge Functions e testes; contrato em [API](./API.md) |

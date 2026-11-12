@@ -12,18 +12,24 @@ Sistema simples para o contador autônomo ou de escritório pequeno: cadastra o 
 | [SRS](docs/SRS.md) | Requisitos, regras de negócio, modelo de dados e questões |
 | [Mapa de fluxo](docs/Mapa%20de%20fluxo.md) | Telas e caminhos do usuário |
 | [Arquitetura](docs/Arquitetura.md) | Componentes, esquema físico, segurança, ambientes e publicação |
+| [API](docs/API.md) | O que o front chama para cada tela e ação |
 | [ADRs](docs/adr/README.md) | Decisões de arquitetura, uma por arquivo |
 
-## Banco de dados
+## Backend
 
-O esquema e os testes ficam em [`supabase/`](supabase):
+O backend fica em [`supabase/`](supabase) e cobre as fases F2 (base) e F3 (cobrança por e-mail):
 
-- `supabase/migrations/`: tabelas, regras de acesso (RLS), funções e calendário padrão;
-- `supabase/tests/database/`: testes pgTAP do isolamento entre contadores e das regras de negócio.
+- `supabase/migrations/`: tabelas, regras de acesso (RLS), regras de negócio, funções da tela e rotina diária;
+- `supabase/functions/`: Edge Functions (envio dos lembretes, avisos do Resend, alerta da rotina, exclusão de conta);
+- `supabase/tests/database/`: 175 testes pgTAP;
+- `supabase/setup/agendar_rotina.sql`: agendamento da rotina, rodado uma vez por ambiente.
 
-Para rodar os testes, com a [CLI do Supabase](https://supabase.com/docs/guides/local-development/cli/getting-started) e o Docker instalados:
+Para rodar os testes, com a [CLI do Supabase](https://supabase.com/docs/guides/local-development/cli/getting-started), o Docker e o [Deno](https://deno.com) instalados:
 
 ```bash
 supabase start
 supabase test db
+deno test supabase/functions/_shared
 ```
+
+O passo a passo de configuração de cada ambiente está na [API](docs/API.md), seção 6.

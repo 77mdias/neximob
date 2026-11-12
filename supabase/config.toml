@@ -417,3 +417,21 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# ---------------------------------------------------------------------------
+# Neximob: Edge Functions (ADR-0005, ADR-0007)
+# As funções chamadas pelo Supabase Cron e pelo Resend não recebem o JWT do
+# Supabase: elas conferem o próprio segredo (Cron) ou a assinatura (Resend).
+# ---------------------------------------------------------------------------
+[functions.enviar-lembretes]
+verify_jwt = false
+
+[functions.alerta-rotina]
+verify_jwt = false
+
+[functions.avisos-email]
+verify_jwt = false
+
+# Chamada pelo app com a sessão do contador.
+[functions.excluir-conta]
+verify_jwt = true
