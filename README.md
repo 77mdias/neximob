@@ -32,4 +32,6 @@ supabase test db
 deno test supabase/functions/_shared
 ```
 
+Os mesmos testes rodam sozinhos no GitHub Actions a cada pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
 O passo a passo de configuração de cada ambiente está na [API](docs/API.md), seção 6.
