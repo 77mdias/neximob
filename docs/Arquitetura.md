@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.2 |
+| **Versão** | 1.3 |
 | **Data** | 11/11/2026 |
 | **Base** | [ADR-0001 a ADR-0008](./adr/README.md) e [SRS](./SRS.md) 1.7 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [API](./API.md) |
@@ -266,7 +266,7 @@ neximob/
 
 ---
 
-## 8. Publicação e integração contínua (proposto)
+## 8. Publicação e integração contínua
 
 ```mermaid
 flowchart LR
@@ -276,7 +276,8 @@ flowchart LR
     T --> P["Produção<br/>manual, depois de conferir"]
 ```
 
-- Em cada pull request: verificação de tipos, lint, testes do app e `supabase test db`.
+- **Implementado** em [`.github/workflows/ci.yml`](../.github/workflows/ci.yml), a cada pull request e a cada push na `main`: o banco sobe no Supabase local (`supabase db start`), recebe as migrações e roda `supabase test db`; as Edge Functions passam por `deno check` e `deno test`. Quando o app Next.js existir, entram também a verificação de tipos, o lint e os testes do app.
+- **(proposto)** O restante desta seção: publicação nos ambientes de testes e de produção.
 - Depois do merge: as migrações são aplicadas no projeto de testes (`supabase db push`) e o Worker de testes é publicado.
 - Produção: publicação manual, primeiro as migrações e depois o Worker.
 - Os tipos TypeScript do banco são gerados pela CLI (`supabase gen types`) a cada migração (ADR-0006).
@@ -344,3 +345,4 @@ Os preços mudam. Conferir na hora de contratar.
 | 1.0 | 11/11/2026 | Primeira versão: componentes, fluxos, esquema físico e testes do banco, chaves, ambientes, publicação, custos e pendências |
 | 1.1 | 11/11/2026 | Nome Neximob; login por e-mail e senha (ADR-0008); texto de pendência no esquema |
 | 1.2 | 12/11/2026 | Backend das fases F2 e F3: funções da tela, rotina diária, Edge Functions e testes; contrato em [API](./API.md) |
+| 1.3 | 22/11/2026 | Integração contínua no GitHub Actions: testes do banco no Supabase local e testes das Edge Functions |
