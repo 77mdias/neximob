@@ -1,0 +1,19 @@
+# Raiz própria: sem este arquivo o pnpm sobe até ~/pnpm-workspace.yaml e instala fora do projeto.
+packages:
+  - .
+
+allowBuilds:
+  esbuild: true
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - '@cloudflare/workerd-darwin-64@1.20261127.1'
+  - '@cloudflare/workerd-darwin-arm64@1.20261127.1'
+  - '@cloudflare/workerd-linux-64@1.20261127.1'
+  - '@cloudflare/workerd-linux-arm64@1.20261127.1'
+  - '@cloudflare/workerd-windows-64@1.20261127.1'
+  - '@cloudflare/workers-utils@0.58.0'
+  - miniflare@5.20261127.0-beta
+  - postcss@8.5.34
+  - workerd@1.20261127.1
+  - wrangler@4.169.0

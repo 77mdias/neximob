@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./neximob-theme.css";
+
+@layer base {
+  body {
+    background-color: var(--nx-bg);
+    color: var(--nx-text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  /* Impede zoom automático do Safari/iOS ao focar campos em telas menores (< 768px) */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Alternância sem flash entre versões da marca (claro/escuro por CSS puro) */
+.nx-only-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .nx-only-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .nx-only-dark {
+  display: inline-block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nx-only-light {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .nx-only-dark {
+    display: inline-block;
+  }
+}

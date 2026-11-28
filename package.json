@@ -1,0 +1,52 @@
+{
+  "name": "neximob",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vinext dev --port 3000",
+    "build": "vinext build",
+    "preview": "wrangler dev --port 8787",
+    "deploy": "vinext build && wrangler deploy",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fonts:sync": "node scripts/sync-fonts.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.2",
+    "lucide-react": "1.66.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-server-dom-webpack": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.70.2",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/newsreader": "5.3.0",
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "26.6.11",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "@vitejs/plugin-rsc": "0.5.39",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "postcss": "8.5.34",
+    "tailwindcss": "4.3.5",
+    "typescript": "5.9.3",
+    "vinext": "1.4.5",
+    "vite": "8.3.0",
+    "vitest": "5.1.0",
+    "wrangler": "4.169.0"
+  }
+}
