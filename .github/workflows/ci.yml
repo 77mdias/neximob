@@ -50,3 +50,32 @@ jobs:
 
       - name: Rodar os testes
         run: deno test supabase/functions/_shared
+
+  app:
+    name: App Web (lint, tipos, testes e build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Checar lint
+        run: pnpm lint
+
+      - name: Checar tipos
+        run: pnpm typecheck
+
+      - name: Rodar testes unitários
+        run: pnpm test
+
+      - name: Gerar build (vinext)
+        run: pnpm build

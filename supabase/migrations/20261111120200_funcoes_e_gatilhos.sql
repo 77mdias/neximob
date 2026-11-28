@@ -160,8 +160,8 @@ execute function public.reiniciar_situacao_do_email();
 -- RF-42: conta nova recebe o perfil, a régua padrão e o calendário padrão
 -- ---------------------------------------------------------------------------
 
--- Textos iniciais dos lembretes por e-mail. O protótipo é a referência de
--- textos: se os dele forem diferentes, substituir aqui.
+-- Textos iniciais dos lembretes por e-mail. Se a revisão dos textos padrão
+-- mudar algum, substituir aqui.
 create or replace function public.criar_conta_do_contador()
 returns trigger
 language plpgsql

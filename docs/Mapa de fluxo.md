@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.6, rascunho para validação |
+| **Versão** | 1.7, rascunho para validação |
 | **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* (seção 3, User Flow) e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026 |
 | **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -15,8 +15,8 @@
 
 | Marcação | Significado |
 |---|---|
-| **Atual** | Já existe no protótipo |
-| **Versão final** | Previsto nas fontes, ainda a construir |
+| **F2** | Primeira versão do app: login, banco e tela única |
+| **Versão final** | Previsto nas fontes para as fases seguintes (F3 a F5) |
 | **(proposto)** | Acrescentado por este documento; precisa ser validado |
 
 Os códigos `RF`, `RN`, `RNF` e `Q` se referem ao [SRS](./SRS.md).
@@ -54,11 +54,11 @@ flowchart TD
 
 | Parte da tela | O que tem | Situação | Requisitos |
 |---|---|---|---|
-| Topo | Mês de referência e botão **+ Novo cliente** | Atual. Na versão final, o mês de referência permite ver meses anteriores | RF-01, RF-18 |
-| Resumo do mês | Recebido (com barra de %), a receber, clientes em atraso, guias a fazer | Atual | RF-03 |
-| Aba Cobranças | Lista de clientes, filtros, cobrar, marcar pago, ajustar valor | Atual, com envio simulado | RF-10 a RF-18 |
-| Aba Obrigações | Checklist do mês e próximos prazos do ano | Atual, com datas de exemplo | RF-20 a RF-24 |
-| Aba Régua de cobrança | Chave Pix, 4 lembretes editáveis e prévia | Atual, sem disparo real | RF-30 a RF-33 |
+| Topo | Mês de referência e botão **+ Novo cliente** | F2. Na versão final, o mês de referência permite ver meses anteriores | RF-01, RF-18 |
+| Resumo do mês | Recebido (com barra de %), a receber, clientes em atraso, guias a fazer | F2 | RF-03 |
+| Aba Cobranças | Lista de clientes, filtros, cobrar, marcar pago, ajustar valor | F2, com cobrança manual (copiar a mensagem). Envio automático na F3 | RF-10 a RF-18 |
+| Aba Obrigações | Checklist do mês e próximos prazos do ano | F2, com o calendário padrão | RF-20 a RF-24 |
+| Aba Régua de cobrança | Chave Pix, 4 lembretes editáveis e prévia | F2. Disparo automático na F3 | RF-30 a RF-33 |
 | Login e conta | Criar conta, entrar, perfil, termos, assinatura | Versão final | RF-40 a RF-45, RF-50 |
 | Calendário fiscal | Cadastrar e corrigir obrigações e datas | Versão final | RF-23 |
 
@@ -112,7 +112,7 @@ Na versão final, o passo 3 fica menor: os lembretes saem sozinhos (RF-34) e o P
 
 ## 4. Ciclo mensal de cobrança
 
-A régua cobra até o cliente pagar e recomeça no mês seguinte. Depois de cada lembrete, o app confere de novo se o cliente pagou. No protótipo, o envio e a baixa são manuais; na versão final, os lembretes saem sozinhos e o Pix dá a baixa.
+A régua cobra até o cliente pagar e recomeça no mês seguinte. Depois de cada lembrete, o app confere de novo se o cliente pagou. Na F2, o envio e a baixa são manuais; na versão final, os lembretes saem sozinhos e o Pix dá a baixa.
 
 ```mermaid
 flowchart TD
@@ -254,9 +254,9 @@ flowchart TD
 
 **Requisitos:** RF-10, RF-11, RF-15.
 
-### 7.2 Cobrar à mão (atual)
+### 7.2 Cobrar à mão (F2)
 
-O botão **Cobrar** monta a mensagem do passo certo para o status do cliente (RN-03). No protótipo, o envio é simulado: o contador copia a mensagem e cola no WhatsApp ou no e-mail.
+O botão **Cobrar** monta a mensagem do passo certo para o status do cliente (RN-03). Na F2, o contador copia a mensagem e cola no WhatsApp ou no e-mail, e o app registra o envio manual (RF-14).
 
 ```mermaid
 flowchart TD
@@ -429,7 +429,7 @@ flowchart TD
 | DASN-SIMEI | MEI | Anual | Ano | Ano anterior |
 | IRPF | PF | Anual | Ano | Ano anterior |
 
-Cada obrigação é rotulada pelo vencimento e mostra a competência, por exemplo: "DAS-MEI · vence 20/11 · competência outubro" (RN-23). O prazo mostrado é a data cadastrada: o app não ajusta sozinho fins de semana e feriados (Q-06). As datas do protótipo são de exemplo e precisam ser conferidas por um contador.
+Cada obrigação é rotulada pelo vencimento e mostra a competência, por exemplo: "DAS-MEI · vence 20/11 · competência outubro" (RN-23). O prazo mostrado é a data cadastrada: o app não ajusta sozinho fins de semana e feriados (Q-06). As datas do calendário padrão são de exemplo e precisam ser conferidas por um contador.
 
 **Requisitos:** RF-20, RF-21, RF-22, RF-24, RN-06, RN-10, RN-23.
 
@@ -569,3 +569,4 @@ flowchart TD
 | 1.4 | 09/11/2026 | E-mail devolvido ou marcado como spam (RN-24, ADR-0007) |
 | 1.5 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |
 | 1.6 | 11/11/2026 | Nome do produto: Neximob. Mecanismo das pendências confirmado |
+| 1.7 | 27/11/2026 | A marcação "Atual" vira "F2" |

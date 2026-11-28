@@ -6,7 +6,7 @@
 
 ## Contexto
 
-- No protótipo, o contador edita livremente o texto de cada passo da régua (RF-31), usando os campos `{nome}`, `{mes}`, `{valor}`, `{venc}` e `{pix}` (RF-32).
+- As fontes pedem que o contador edite livremente o texto de cada passo da régua (RF-31), usando os campos `{nome}`, `{mes}`, `{valor}`, `{venc}` e `{pix}` (RF-32).
 - O Briefing exige o WhatsApp só pela API oficial, com modelos de mensagem aprovados, porque o disparo automático por número comum pode bloquear o número (RNF-04).
 - Na API oficial do WhatsApp:
   - uma mensagem que a empresa inicia, fora da janela de 24 horas depois da última mensagem do cliente, só pode ser enviada a partir de um **modelo aprovado pela Meta**. Um lembrete de cobrança é sempre esse caso;
@@ -16,7 +16,7 @@
 
 ## Decisão
 
-1. **E-mail:** o texto de cada passo continua **livre e editável** pelo contador, como no protótipo.
+1. **E-mail:** o texto de cada passo continua **livre e editável** pelo contador, como pedem as fontes.
 2. **WhatsApp:** a plataforma escreve, submete e mantém **um modelo fixo por passo** (3 dias antes, no dia, 3 dias depois, 7 dias depois), mais **um modelo de pendência** para cobranças de meses anteriores (RN-18), todos na categoria utilidade.
 3. Os campos da mensagem (RN-11) viram **as variáveis do modelo**. O contador continua ligando e desligando cada passo, mas não edita o texto do WhatsApp.
 4. A aba Régua de cobrança mostra a **prévia do WhatsApp sem edição**, com uma frase curta explicando que o texto segue um modelo aprovado pelo WhatsApp.

@@ -1,6 +1,6 @@
 -- Neximob: calendário fiscal padrão de 2026 (RF-20, Q-08)
 --
--- ATENÇÃO: datas de exemplo, como no protótipo. Precisam ser conferidas por
+-- ATENÇÃO: datas de exemplo. Precisam ser conferidas por
 -- um contador antes do lançamento. O app não ajusta sozinho prazos que caem
 -- em fim de semana ou feriado (Q-06); a correção é feita aqui, no calendário
 -- do ano, ou pelo contador na própria conta (RF-23).

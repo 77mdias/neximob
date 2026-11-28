@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "neximob",
+  "compatibility_date": "2026-11-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/app-router-entry",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "previews": {
+    "vars": {
+      "NEXT_PUBLIC_SITE_URL": "https://preview.neximob.app"
+    }
+  },
+  "observability": {
+    "enabled": true
+  }
+}

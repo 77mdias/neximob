@@ -6,5 +6,9 @@
 # Dependências e builds
 node_modules/
 .next/
+.vinext/
 .open-next/
+dist/
 .wrangler/
+tsconfig.tsbuildinfo
+next-env.d.ts

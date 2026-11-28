@@ -66,8 +66,8 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Textos padrão (RF-31). O protótipo é a referência: se os textos dele forem
--- diferentes, substituir aqui.
+-- Textos padrão (RF-31). Se a revisão dos textos padrão mudar algum,
+-- substituir aqui.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.nome_padrao_do_passo(p_dias int)

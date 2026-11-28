@@ -1,0 +1,281 @@
+/* ==========================================================================
+ * Neximob Design System — Tokens Base (DV-01)
+ * Tailwind CSS v4 · Temas Claro e Escuro · WCAG 2.1 AA/AAA
+ *
+ * Uso no Next.js (src/app/globals.css):
+ *   @import "tailwindcss";
+ *   @import "./fonts.css";
+ *   @import "./neximob-theme.css";
+ *
+ * Troca de tema:
+ *   - Padrão: segue prefers-color-scheme do sistema.
+ *   - Sobrescrita manual salva pelo usuário: data-theme="light" ou "dark" em <html>.
+ * ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- Paleta bruta da marca (referência imutável) --- */
+  --nx-brand-areia: #dddcc5;
+  --nx-brand-taupe: #958976;
+  --nx-brand-vinho: #611427;
+  --nx-brand-grafite: #1d2326;
+  --nx-brand-oliva: #6a6a61;
+
+  /* --- Superfícies (Tema Claro) --- */
+  --nx-bg: #ffffff;
+  --nx-surface: #f4f3eb;         /* Bloco de destaque suave (derivado da Areia) */
+  --nx-surface-brand: #dddcc5;   /* Areia pura: resumo do mês / chips neutros destacados */
+  --nx-surface-subtle: #faf9f5;  /* Zebra de tabela / hover discreto */
+  --nx-surface-muted: #ecebe2;   /* Botão secundário / filtros inativos */
+  --nx-surface-elevated: #ffffff;/* Modais, drawers e menus flutuantes */
+  --nx-input-bg: #faf9f5;        /* Fundo suave dos campos de entrada */
+  --nx-header-bg: rgba(255, 255, 255, 0.92);
+
+  /* --- Tipografia (Tema Claro) --- */
+  --nx-text: #1d2326;            /* Grafite — 15,90:1 s/ #FFF · 11,45:1 s/ Areia */
+  --nx-text-strong: #343b3e;     /* Células, labels fortes — 11,41:1 s/ #FFF */
+  --nx-text-body: #4a4e4b;       /* Corpo/descrições — 8,46:1 s/ #FFF · 6,09:1 s/ Areia */
+  --nx-text-muted: #6a6a61;      /* Oliva — 5,46:1 s/ #FFF · 4,90:1 s/ #F4F3EB (NUNCA sobre #DDDCC5) */
+
+  /* --- Bordas (Tema Claro) --- */
+  --nx-border: #dddcd0;          /* Hairline 1px de cards, tabelas e divisores */
+  --nx-border-subtle: #ecebe2;   /* Divisores internos leves */
+  --nx-border-strong: #958976;   /* Taupe — borda de input/controle (3,43:1 s/ #FFF) */
+
+  /* --- Acento único da marca: Vinho (Tema Claro) --- */
+  --nx-accent: #611427;          /* Links, aba ativa, barra de % recebido, foco (12,82:1 s/ #FFF) */
+  --nx-accent-hover: #4b0e1d;    /* Hover de botão primário (15,22:1 c/ #FFF) */
+  --nx-accent-fg: #ffffff;       /* Texto sobre botão primário (12,82:1) */
+  --nx-accent-border: #611427;   /* Borda do botão primário */
+  --nx-accent-soft: #958976;     /* Traço decorativo 40x2px / detalhes secundários */
+  --nx-accent-tint: #f9ecef;     /* Fundo suave de aba/chip selecionado */
+  --nx-focus-ring: #611427;      /* Anel de foco por teclado (2px + 2px offset) */
+
+  /* --- Status de cobrança (DV-03 · fora da paleta da marca) --- */
+  --nx-status-paid-fg: #0f6e4a;       /* 5,74:1 s/ bg */
+  --nx-status-paid-bg: #ebf8f2;
+  --nx-status-paid-border: #a7dec6;
+
+  --nx-status-upcoming-fg: #343b3e;   /* 9,53:1 s/ bg */
+  --nx-status-upcoming-bg: #ecebe2;
+  --nx-status-upcoming-border: #d4d2c5;
+
+  --nx-status-today-fg: #8a4500;      /* 6,66:1 s/ bg */
+  --nx-status-today-bg: #fef6e6;
+  --nx-status-today-border: #f3cd8b;
+
+  --nx-status-overdue-fg: #b42318;    /* Vermelho vivo (matiz 4°) distinto do Vinho (345°) — 5,92:1 s/ bg */
+  --nx-status-overdue-bg: #fef0ee;
+  --nx-status-overdue-border: #f5b8b0;
+
+  /* --- Sombras (somente elementos flutuantes) --- */
+  --nx-shadow-popover: 0 12px 28px -6px rgba(29, 35, 38, 0.14), 0 4px 10px -4px rgba(29, 35, 38, 0.08);
+  --nx-shadow-modal: 0 24px 48px -12px rgba(29, 35, 38, 0.22), 0 8px 16px -6px rgba(29, 35, 38, 0.10);
+  --nx-backdrop: rgba(29, 35, 38, 0.45);
+}
+
+/* Tema Escuro: sistema (quando não há override explícito para light) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    /* --- Superfícies (Tema Escuro) --- */
+    --nx-bg: #1d2326;              /* Grafite oficial */
+    --nx-surface: #252c30;         /* Resumo do mês / cards */
+    --nx-surface-brand: #2e363b;   /* Destaque / chips neutros */
+    --nx-surface-subtle: #21282c;  /* Zebra de tabela / hover discreto */
+    --nx-surface-muted: #31393e;   /* Botão secundário / filtros inativos */
+    --nx-surface-elevated: #283035;/* Modais, drawers e menus flutuantes */
+    --nx-input-bg: #191f22;        /* Fundo de campos no tema escuro */
+    --nx-header-bg: rgba(29, 35, 38, 0.92);
+
+    /* --- Tipografia (Tema Escuro) --- */
+    --nx-text: #f2f1e8;            /* Títulos e KPIs — 14,03:1 s/ #1D2326 */
+    --nx-text-strong: #dddcc5;     /* Areia oficial — texto principal UI (11,45:1 s/ #1D2326) */
+    --nx-text-body: #c5c3b0;       /* Corpo/descrições — 8,94:1 s/ #1D2326 */
+    --nx-text-muted: #a69b89;      /* Taupe elevado — 5,81:1 s/ #1D2326 · 5,18:1 s/ #252C30 */
+
+    /* --- Bordas (Tema Escuro) --- */
+    --nx-border: #374046;          /* Hairline 1px sutil */
+    --nx-border-subtle: #2d353a;   /* Divisores internos */
+    --nx-border-strong: #958976;   /* Taupe oficial — borda de input/controle (4,63:1 s/ #1D2326) */
+
+    /* --- Acento único: Vinho adaptado para acessibilidade (Tema Escuro) --- */
+    --nx-accent: #df7a91;          /* Links, aba ativa, barra de % recebido (5,55:1 s/ #1D2326 · 4,95:1 s/ #252C30) */
+    --nx-accent-hover: #7a1b32;    /* Hover do botão primário Vinho (10,34:1 c/ #FFF) */
+    --nx-accent-btn-bg: #611427;   /* Botão primário mantém o Vinho oficial c/ texto branco (12,82:1) */
+    --nx-accent-fg: #ffffff;
+    --nx-accent-border: #df7a91;   /* Borda 1,5px garante 5,55:1 de limite do botão sobre #1D2326 (WCAG 1.4.11) */
+    --nx-accent-soft: #958976;     /* Taupe oficial */
+    --nx-accent-tint: #3a2129;     /* Fundo suave de aba/chip selecionado */
+    --nx-focus-ring: #df7a91;      /* Anel de foco por teclado (5,55:1 s/ #1D2326) */
+
+    /* --- Status de cobrança (Tema Escuro) --- */
+    --nx-status-paid-fg: #6ee7b7;       /* 8,97:1 s/ bg */
+    --nx-status-paid-bg: #14332a;
+    --nx-status-paid-border: #255b4b;
+
+    --nx-status-upcoming-fg: #dddcc5;   /* 8,47:1 s/ bg */
+    --nx-status-upcoming-bg: #31393e;
+    --nx-status-upcoming-border: #49545b;
+
+    --nx-status-today-fg: #fcd34d;      /* 9,27:1 s/ bg */
+    --nx-status-today-bg: #3b2d14;
+    --nx-status-today-border: #6b4f1d;
+
+    --nx-status-overdue-fg: #ff9387;    /* Coral-vermelho vivo (matiz 6°) distinto do #DF7A91 — 7,05:1 s/ bg */
+    --nx-status-overdue-bg: #3f1b1d;
+    --nx-status-overdue-border: #783236;
+
+    /* --- Sombras (Tema Escuro) --- */
+    --nx-shadow-popover: 0 12px 32px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(221, 220, 197, 0.08);
+    --nx-shadow-modal: 0 24px 56px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(221, 220, 197, 0.10);
+    --nx-backdrop: rgba(11, 14, 16, 0.72);
+  }
+}
+
+/* Override manual para Tema Escuro (idêntico ao bloco acima) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --nx-bg: #1d2326;
+  --nx-surface: #252c30;
+  --nx-surface-brand: #2e363b;
+  --nx-surface-subtle: #21282c;
+  --nx-surface-muted: #31393e;
+  --nx-surface-elevated: #283035;
+  --nx-input-bg: #191f22;
+  --nx-header-bg: rgba(29, 35, 38, 0.92);
+
+  --nx-text: #f2f1e8;
+  --nx-text-strong: #dddcc5;
+  --nx-text-body: #c5c3b0;
+  --nx-text-muted: #a69b89;
+
+  --nx-border: #374046;
+  --nx-border-subtle: #2d353a;
+  --nx-border-strong: #958976;
+
+  --nx-accent: #df7a91;
+  --nx-accent-hover: #7a1b32;
+  --nx-accent-btn-bg: #611427;
+  --nx-accent-fg: #ffffff;
+  --nx-accent-border: #df7a91;
+  --nx-accent-soft: #958976;
+  --nx-accent-tint: #3a2129;
+  --nx-focus-ring: #df7a91;
+
+  --nx-status-paid-fg: #6ee7b7;
+  --nx-status-paid-bg: #14332a;
+  --nx-status-paid-border: #255b4b;
+
+  --nx-status-upcoming-fg: #dddcc5;
+  --nx-status-upcoming-bg: #31393e;
+  --nx-status-upcoming-border: #49545b;
+
+  --nx-status-today-fg: #fcd34d;
+  --nx-status-today-bg: #3b2d14;
+  --nx-status-today-border: #6b4f1d;
+
+  --nx-status-overdue-fg: #ff9387;
+  --nx-status-overdue-bg: #3f1b1d;
+  --nx-status-overdue-border: #783236;
+
+  --nx-shadow-popover: 0 12px 32px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(221, 220, 197, 0.08);
+  --nx-shadow-modal: 0 24px 56px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(221, 220, 197, 0.10);
+  --nx-backdrop: rgba(11, 14, 16, 0.72);
+}
+
+/* Fallback do botão primário no tema claro */
+:root,
+:root[data-theme="light"] {
+  --nx-accent-btn-bg: #611427;
+}
+
+/* --- Mapeamento Tailwind CSS v4 --- */
+@theme inline {
+  /* Cores semânticas */
+  --color-bg: var(--nx-bg);
+  --color-surface: var(--nx-surface);
+  --color-surface-brand: var(--nx-surface-brand);
+  --color-surface-subtle: var(--nx-surface-subtle);
+  --color-surface-muted: var(--nx-surface-muted);
+  --color-surface-elevated: var(--nx-surface-elevated);
+  --color-input-bg: var(--nx-input-bg);
+  --color-header-bg: var(--nx-header-bg);
+
+  --color-text: var(--nx-text);
+  --color-text-strong: var(--nx-text-strong);
+  --color-text-body: var(--nx-text-body);
+  --color-text-muted: var(--nx-text-muted);
+
+  --color-border: var(--nx-border);
+  --color-border-subtle: var(--nx-border-subtle);
+  --color-border-strong: var(--nx-border-strong);
+
+  --color-accent: var(--nx-accent);
+  --color-accent-btn: var(--nx-accent-btn-bg);
+  --color-accent-hover: var(--nx-accent-hover);
+  --color-accent-fg: var(--nx-accent-fg);
+  --color-accent-border: var(--nx-accent-border);
+  --color-accent-soft: var(--nx-accent-soft);
+  --color-accent-tint: var(--nx-accent-tint);
+  --color-focus: var(--nx-focus-ring);
+
+  --color-status-paid-fg: var(--nx-status-paid-fg);
+  --color-status-paid-bg: var(--nx-status-paid-bg);
+  --color-status-paid-border: var(--nx-status-paid-border);
+  --color-status-upcoming-fg: var(--nx-status-upcoming-fg);
+  --color-status-upcoming-bg: var(--nx-status-upcoming-bg);
+  --color-status-upcoming-border: var(--nx-status-upcoming-border);
+  --color-status-today-fg: var(--nx-status-today-fg);
+  --color-status-today-bg: var(--nx-status-today-bg);
+  --color-status-today-border: var(--nx-status-today-border);
+  --color-status-overdue-fg: var(--nx-status-overdue-fg);
+  --color-status-overdue-bg: var(--nx-status-overdue-bg);
+  --color-status-overdue-border: var(--nx-status-overdue-border);
+
+  /* Famílias tipográficas (2 arquivos variáveis .woff2, font-display: swap) */
+  --font-serif: var(--font-newsreader), "Newsreader", Georgia, serif;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Raios contidos (alinhados aos traços retos da logo) */
+  --radius-xs: 4px;     /* Selos compactos, micro-barras */
+  --radius-sm: 6px;     /* TODOS os botões e inputs (raio único) */
+  --radius-md: 8px;     /* Cards do resumo, tabelas, cartões mobile */
+  --radius-lg: 12px;    /* Modais, bottom sheets e popovers */
+  --radius-pill: 9999px;/* Selos de status, filtros, switches */
+
+  /* Sombras */
+  --shadow-popover: var(--nx-shadow-popover);
+  --shadow-modal: var(--nx-shadow-modal);
+
+  /* Motion curto e funcional */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-panel: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+}
+
+/* --- Acessibilidade de base (DV-10) --- */
+:focus-visible {
+  outline: 2px solid var(--nx-focus-ring);
+  outline-offset: 2px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
+}

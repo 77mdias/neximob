@@ -1,6 +1,6 @@
 # ADR-0006: Hospedagem na Cloudflare, Supabase em São Paulo e TypeScript
 
-- **Status:** Aceita
+- **Status:** Aceita (adaptador do Next.js atualizado pela [ADR-0009](./0009-arquitetura-frontend-nextjs-vinext-tailwind-fontes.md))
 - **Data:** 09/11/2026
 - **Requisitos:** RNF-03, RNF-08, RNF-10, RNF-12, RNF-16
 - **Completa:** ADR-0001 (pontos pendentes de hospedagem, região e linguagem)
