@@ -6,10 +6,10 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.3 |
-| **Data** | 11/11/2026 |
-| **Base** | [ADR-0001 a ADR-0008](./adr/README.md) e [SRS](./SRS.md) 1.7 |
-| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [API](./API.md) |
+| **Versão** | 1.5 |
+| **Data** | 27/11/2026 |
+| **Base** | [ADR-0001 a ADR-0009](./adr/README.md) e [SRS](./SRS.md) 1.9 |
+| **Documentos relacionados** | [PRD](./PRD.md) · [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Direção visual](./Dire%C3%A7%C3%A3o%20visual.md) · [Design System](./Design%20System.md) · [Plano de Engenharia Frontend](./Plano%20de%20Engenharia%20Frontend.md) · [API](./API.md) |
 
 Este documento junta as decisões de arquitetura numa visão só: o que existe, onde roda, quem acessa o quê e como o sistema é testado e publicado. O motivo de cada escolha está na ADR indicada. Itens marcados como **(proposto)** ainda não foram decididos.
 
@@ -19,7 +19,7 @@ Este documento junta as decisões de arquitetura numa visão só: o que existe, 
 
 | Parte | Tecnologia | ADR |
 |---|---|---|
-| Interface e rotas de servidor | Next.js em TypeScript, na **Cloudflare Workers** (adaptador OpenNext) | 0001, 0006 |
+| Interface e rotas de servidor | Next.js 16 em TypeScript, na **Cloudflare Workers** via **`vinext`** (Vite 8 + `@cloudflare/vite-plugin`) | 0001, 0006, 0009 |
 | Banco de dados | **Postgres do Supabase**, região de São Paulo | 0001, 0006 |
 | Login | **Supabase Auth**, com e-mail e senha, confirmação e recuperação por e-mail | 0001, 0008 |
 | Isolamento entre contadores | **RLS** em todas as tabelas, chaves compostas e permissões por coluna | 0004 |
@@ -45,7 +45,7 @@ flowchart LR
     CLI(["Cliente do contador"])
 
     subgraph CF["Cloudflare"]
-        WEB["Next.js<br/>Worker com OpenNext"]
+        WEB["Next.js 16<br/>Worker com vinext"]
     end
 
     subgraph SB["Supabase, São Paulo"]
@@ -108,8 +108,15 @@ sequenceDiagram
     W-->>N: tela pronta
 ```
 
-- **(proposto)** A sessão fica em cookies, com a biblioteca `@supabase/ssr`, e o middleware do Next.js renova a sessão a cada requisição.
-- A chave usada pelo Next.js é a pública (`publishable`/`anon`). Sozinha, ela não dá acesso a nenhum dado: quem decide é a RLS, a partir da sessão.
+- A sessão fica em cookies HTTP-only/seguros, gerenciada por `@supabase/ssr` num cliente criado **por requisição** (`src/server/supabase/server.ts`), e `src/proxy.ts` renova a sessão a cada navegação ([ADR-0009](./adr/0009-arquitetura-frontend-nextjs-vinext-tailwind-fontes.md)).
+- A chave usada pelo Next.js é a pública (`publishable`/`anon`). Sozinha, ela não dá acesso a nenhum dado: quem decide é a RLS, a partir da sessão validada com `supabase.auth.getUser()`.
+- Para cumprir `RNF-10` (`≤ 2 s` no 4G) e `DV-04` (`≤ 250 ms` na baixa), o Server Component da tela única carrega o mês num único `Promise.all`, as trocas de aba e de filtro de status ocorrem em `0 ms` no navegador com `history.replaceState` e as baixas usam `useOptimistic` + Server Actions.
+
+### 3.4 Frontend: tema, fontes e ativos na borda (ADR-0009)
+
+- **Tokens Tailwind CSS v4:** arquivo único em `src/app/neximob-theme.css`, com suporte automático a `prefers-color-scheme` e escolha manual (`Sistema · Claro · Escuro`) aplicada antes da primeira pintura por script síncrono no `<head>`.
+- **Fontes self-hosted (0 ms de CPU no Worker):** apenas 2 arquivos `.woff2` variáveis (`Inter` e `Newsreader`) em `public/fonts/`, servidos pelo Workers Static Assets no mesmo domínio HTTP/3 com `font-display: swap`, `font-synthesis: none` e zero chamada à CDN do Google (LGPD).
+- **Ícones e marca:** todos os favicons, ícones PWA, manifesto, OG e SVGs claro/escuro vivem em `public/` e `public/brand/` (sem arquivos `icon.*` em `src/app/`). O detalhamento completo e o plano de tarefas (`FE-01` a `FE-10`) estão no [Plano de Engenharia Frontend](./Plano%20de%20Engenharia%20Frontend.md).
 
 ### 3.2 Rotina diária
 
@@ -253,7 +260,10 @@ Dados reais nunca saem da produção, nem para testes.
 
 ```text
 neximob/
-├── docs/                    PRD, SRS, Mapa de fluxo, Arquitetura e ADRs
+├── docs/                    PRD, SRS, Mapa de fluxo, Direção visual, Design System, Arquitetura, Plano Frontend, API e ADRs
+├── public/                  favicons, manifesto, OG, brand/ (logos SVG/PNG) e fonts/ (2 .woff2 variáveis)
+├── src/                     app Next.js 16 (app/, server/, features/, components/ui/, lib/ e proxy.ts)
+├── tests/                   testes unitários do frontend (Vitest)
 └── supabase/
     ├── config.toml          configuração do Supabase local (CLI)
     ├── migrations/          esquema do banco, versionado
@@ -262,7 +272,7 @@ neximob/
     └── setup/               agendamento da rotina diária, por ambiente
 ```
 
-**(proposto)** O app Next.js entra na raiz do repositório na F2, com a configuração do OpenNext e do Wrangler (CLI da Cloudflare) ao lado.
+O app Next.js vive na raiz do repositório, empacotado para a Cloudflare Workers com `vinext` (`vite.config.ts` e `wrangler.jsonc`) e isolado por `pnpm-workspace.yaml` ([ADR-0009](./adr/0009-arquitetura-frontend-nextjs-vinext-tailwind-fontes.md)).
 
 ---
 
@@ -315,7 +325,7 @@ Os preços mudam. Conferir na hora de contratar.
 |---|---|---|
 | Domínio do Neximob | Registrar e autenticar o domínio de onde saem os e-mails (ADR-0007) | Antes de abrir o cadastro ao público e antes da F3 |
 | CAPTCHA no login e no cadastro | **(proposto)** Cloudflare Turnstile (ADR-0008) | Antes de abrir o cadastro ao público |
-| Textos padrão da régua | O esquema usa textos iniciais. Substituir pelos do protótipo, se forem diferentes | F2 |
+| Textos padrão da régua | O esquema usa textos iniciais. Revisar com o PMM e validar com um contador | F2 |
 | Datas do calendário padrão de 2026 | Datas de exemplo; conferir com um contador | Antes do uso com dados reais |
 | Local dos avisos dos provedores | E-mail: Edge Function `avisos-email`, implementada. WhatsApp e Pix: **(proposto)** também em Edge Functions | F4 |
 | WhatsApp (Q-16) e Pix (Q-17, Q-18) | Em aberto | Antes da F4 |
@@ -335,6 +345,7 @@ Os preços mudam. Conferir na hora de contratar.
 | [0006](./adr/0006-hospedagem-cloudflare-supabase-sao-paulo.md) | Cloudflare, São Paulo, TypeScript | 1, 2, 6, 10 |
 | [0007](./adr/0007-email-resend.md) | E-mail com o Resend | 2, 3.3, 5, 10 |
 | [0008](./adr/0008-login-email-e-senha.md) | Login por e-mail e senha | 1, 2, 11 |
+| [0009](./adr/0009-arquitetura-frontend-nextjs-vinext-tailwind-fontes.md) | Frontend Next.js (`vinext`, Tailwind v4, fontes self-hosted e sessão SSR) | 1, 2, 3.1, 3.4, 7, 8 |
 
 ---
 
@@ -346,3 +357,5 @@ Os preços mudam. Conferir na hora de contratar.
 | 1.1 | 11/11/2026 | Nome Neximob; login por e-mail e senha (ADR-0008); texto de pendência no esquema |
 | 1.2 | 12/11/2026 | Backend das fases F2 e F3: funções da tela, rotina diária, Edge Functions e testes; contrato em [API](./API.md) |
 | 1.3 | 22/11/2026 | Integração contínua no GitHub Actions: testes do banco no Supabase local e testes das Edge Functions |
+| 1.4 | 27/11/2026 | Textos padrão da régua: revisão com o PMM |
+| 1.5 | 27/11/2026 | Arquitetura do frontend Next.js fechada (ADR-0009): `vinext` nos Workers, `src/app/neximob-theme.css`, 2 fontes `.woff2` self-hosted em `public/fonts/`, `@supabase/ssr` + `proxy.ts` e plano atômico em [Plano de Engenharia Frontend](./Plano%20de%20Engenharia%20Frontend.md) |

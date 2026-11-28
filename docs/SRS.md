@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.8, rascunho para validação |
+| **Versão** | 1.9, rascunho para validação |
 | **Data** | 12/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [PRD](./PRD.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [API](./API.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -17,7 +17,7 @@
 
 ### 1.1 Propósito
 
-Este documento especifica os requisitos funcionais, os requisitos não funcionais, as regras de negócio e o modelo de dados do Neximob. Ele orienta a construção da versão final a partir do protótipo e serve de base para os testes de aceitação. É escrito para quem desenvolve, testa e decide o produto.
+Este documento especifica os requisitos funcionais, os requisitos não funcionais, as regras de negócio e o modelo de dados do Neximob. Ele orienta a construção do app e serve de base para os testes de aceitação. É escrito para quem desenvolve, testa e decide o produto.
 
 ### 1.2 Escopo do sistema
 
@@ -38,9 +38,7 @@ Ficam fora: emissão de nota fiscal, integração com a Receita Federal ou o e-C
 | `Q-xx` | Questão de produto ou de regra (seção 9) |
 | `ADR-xxxx` | Decisão de arquitetura, registrada em [docs/adr](./adr/README.md) |
 | **Origem: Decisão** | Decidido pelo responsável do produto; a data está na seção 9.1 |
-| **Status: Feito** | Já existe no protótipo. Na versão final precisa ser reimplementado com dados no servidor |
-| **Status: Simulado** | A tela existe, mas a ação não acontece de verdade |
-| **Status: A fazer** | Falta construir |
+| **Status: A fazer** | Falta construir a tela. O que o backend já cobre está na [API](./API.md) |
 | **Status: Em aberto** | Depende de uma decisão de produto |
 | **Fase** | F1 Validar · F2 Base · F3 Cobrança real · F4 Pix e WhatsApp · F5 Venda (ver PRD, seção 9) |
 | **Origem: Doc** | Documentação do Produto |
@@ -73,14 +71,14 @@ O glossário completo está no [PRD](./PRD.md), seção 14. Os termos abaixo tê
 
 ### 2.1 Perspectiva do produto
 
-| | Protótipo (hoje) | Versão final |
+| | Hoje | Versão final |
 |---|---|---|
-| Tecnologia | Página HTML com JavaScript puro, sem biblioteca | Next.js em TypeScript, hospedado na Cloudflare, com Supabase (Postgres e Auth) em São Paulo (ADR-0001, ADR-0006) |
-| Dados | Objeto salvo no navegador (chave de armazenamento com o nome antigo "Prazo Certo") | No servidor, por conta de contador, acessíveis do celular e do computador |
-| Clientes | De exemplo | Reais, cadastrados pelo contador |
-| Envio de cobrança | Simulado: mensagem pronta para copiar | E-mail e WhatsApp automáticos, pela régua |
-| Pagamento | Marcado à mão | Pix com baixa automática, e também à mão |
-| Obrigações | Fixas no código, com datas de exemplo | Calendário editável, conferido por um contador |
+| Tecnologia | Backend no Supabase pronto (F2 e F3); interface ainda não construída | Next.js em TypeScript, hospedado na Cloudflare, com Supabase (Postgres e Auth) em São Paulo (ADR-0001, ADR-0006) |
+| Dados | Esquema no Supabase, sem dados reais | No servidor, por conta de contador, acessíveis do celular e do computador |
+| Clientes | Nenhum | Reais, cadastrados pelo contador |
+| Envio de cobrança | E-mail pela rotina diária, já no backend | E-mail e WhatsApp automáticos, pela régua |
+| Pagamento | Baixa manual, já no backend | Pix com baixa automática, e também à mão |
+| Obrigações | Calendário padrão no banco, com datas de exemplo | Calendário editável, conferido por um contador |
 
 **Contexto do sistema**
 
@@ -143,7 +141,7 @@ flowchart LR
 | C-04 | Regras fiscais mudam: datas e obrigações devem ser fáceis de atualizar e conferidas por um contador | Briefing |
 | C-05 | As regras da seção 4 marcadas como **invioláveis** não podem mudar | Briefing |
 | C-06 | Tudo em português, valores em reais, funcionando no celular | Briefing |
-| C-07 | A interface deve manter o visual do protótipo: resumo do mês no topo e abas Cobranças, Obrigações e Régua de cobrança | Briefing |
+| C-07 | A interface é uma tela única: resumo do mês no topo e abas Cobranças, Obrigações e Régua de cobrança. O visual segue a [Direção visual](./Dire%C3%A7%C3%A3o%20visual.md) | Briefing, Decisão |
 
 ### 2.6 Premissas e dependências
 
@@ -161,30 +159,30 @@ flowchart LR
 
 | Código | Requisito | Status | Fase | Origem |
 |---|---|---|---|---|
-| RF-01 | Cadastrar cliente com nome, tipo, honorário mensal e dia de vencimento | Feito | F2 | Doc |
-| RF-02 | Ao cadastrar, a cobrança e os prazos do cliente passam a valer todo mês | Feito | F2 | Doc |
-| RF-03 | Resumo do mês: recebido (com barra de %), a receber, clientes em atraso e guias a fazer | Feito | F2 | Doc |
+| RF-01 | Cadastrar cliente com nome, tipo, honorário mensal e dia de vencimento | A fazer | F2 | Doc |
+| RF-02 | Ao cadastrar, a cobrança e os prazos do cliente passam a valer todo mês | A fazer | F2 | Doc |
+| RF-03 | Resumo do mês: recebido (com barra de %), a receber, clientes em atraso e guias a fazer | A fazer | F2 | Doc |
 | RF-04 | Editar e excluir cliente | A fazer | F2 | Doc |
 | RF-05 | Telefone e e-mail do cliente para envio da cobrança | A fazer | F2 | Doc |
 | RF-06 | Inativar e reativar cliente | A fazer | F2 | Decisão (Q-15) |
-| RF-10 | Status do cliente no mês: Pago, Vence dia X, Vence hoje, Atrasado há N dias | Feito | F2 | Doc |
-| RF-11 | Filtros e ordem da lista de cobranças | Feito | F2 | Doc |
-| RF-12 | Marcar como pago e desfazer | Feito | F2 | Doc |
-| RF-13 | Ajustar o valor só do mês com serviço extra e motivo | Feito | F2 | Doc |
-| RF-14 | Mostrar a mensagem do passo certo da régua, copiar e registrar o envio | Simulado | F2 | Doc |
-| RF-15 | Mostrar a data do próximo lembrete automático | Feito | F2 | Doc |
+| RF-10 | Status do cliente no mês: Pago, Vence dia X, Vence hoje, Atrasado há N dias | A fazer | F2 | Doc |
+| RF-11 | Filtros e ordem da lista de cobranças | A fazer | F2 | Doc |
+| RF-12 | Marcar como pago e desfazer | A fazer | F2 | Doc |
+| RF-13 | Ajustar o valor só do mês com serviço extra e motivo | A fazer | F2 | Doc |
+| RF-14 | Mostrar a mensagem do passo certo da régua, copiar e registrar o envio | A fazer | F2 | Doc |
+| RF-15 | Mostrar a data do próximo lembrete automático | A fazer | F2 | Doc |
 | RF-16 | Enviar a cobrança de verdade por e-mail e WhatsApp | A fazer | F3 (e-mail), F4 (WhatsApp) | Doc |
 | RF-17 | Cobrança por Pix com baixa automática | A fazer | F4 | Doc |
 | RF-18 | Histórico dos meses anteriores | A fazer | **(proposto)** F3 | Doc |
-| RF-20 | Obrigações por tipo de cliente | Feito, datas de exemplo | F2 | Doc |
-| RF-21 | Checklist por obrigação com "X de Y feitos" e barra de progresso | Feito | F2 | Doc |
-| RF-22 | Aviso de prazo: vencida, vence hoje ou faltam N dias | Feito | F2 | Doc |
+| RF-20 | Obrigações por tipo de cliente | A fazer | F2 | Doc |
+| RF-21 | Checklist por obrigação com "X de Y feitos" e barra de progresso | A fazer | F2 | Doc |
+| RF-22 | Aviso de prazo: vencida, vence hoje ou faltam N dias | A fazer | F2 | Doc |
 | RF-23 | Tela para o contador cadastrar e corrigir obrigações e datas | A fazer | F5 | Doc |
-| RF-24 | Próximos prazos do ano | Feito, datas de exemplo | F2 | Doc (mapa de telas) |
-| RF-30 | Régua com 4 passos: 3 dias antes, no dia, 3 dias depois e 7 dias depois | Feito | F2 | Doc |
-| RF-31 | Ligar e desligar cada passo e editar o texto | Feito | F2 | Doc |
-| RF-32 | Campos na mensagem: `{nome}`, `{mes}`, `{valor}`, `{venc}`, `{pix}` | Feito | F2 | Doc |
-| RF-33 | Chave Pix do contador e prévia da mensagem com um cliente de exemplo | Feito | F2 | Doc |
+| RF-24 | Próximos prazos do ano | A fazer | F2 | Doc (mapa de telas) |
+| RF-30 | Régua com 4 passos: 3 dias antes, no dia, 3 dias depois e 7 dias depois | A fazer | F2 | Doc |
+| RF-31 | Ligar e desligar cada passo e editar o texto | A fazer | F2 | Doc |
+| RF-32 | Campos na mensagem: `{nome}`, `{mes}`, `{valor}`, `{venc}`, `{pix}` | A fazer | F2 | Doc |
+| RF-33 | Chave Pix do contador e prévia da mensagem com um cliente de exemplo | A fazer | F2 | Doc |
 | RF-34 | Rotina diária no servidor que dispara o passo certo | A fazer | F3 | Doc |
 | RF-35 | Registro dos envios, com passo, canal, data e status | A fazer | F3 | Briefing |
 | RF-40 | Criar conta e entrar por e-mail | A fazer | F2 | Briefing |
@@ -241,7 +239,7 @@ Quatro cards no topo da tela, calculados para o mês de referência:
 | **Clientes em atraso** | Quantidade de clientes com alguma cobrança atrasada (RN-02), do mês de referência ou de meses anteriores (RN-18) |
 | **Guias a fazer no mês** | Quantidade de pares (obrigação, cliente) com prazo no mês de referência e ainda não marcados como feitos |
 
-> Os cálculos acima são a interpretação deste documento e devem ser conferidos no protótipo. Em particular: "Recebido" considera o mês da cobrança, e não a data do pagamento.
+> Os cálculos acima são a interpretação deste documento e devem ser conferidos com um contador na validação (F1). Em particular: "Recebido" considera o mês da cobrança, e não a data do pagamento.
 
 **Critérios de aceite**
 - Dado um mês com R$ 1.000,00 recebidos e R$ 500,00 a receber, quando a tela carrega, então o card Recebido mostra R$ 1.000,00 e a barra marca 67%.
@@ -329,7 +327,7 @@ Cada cobrança mostra um status, calculado pela RN-02:
 - O contador pode **copiar** a mensagem e **registrar o envio**.
 - Se o cliente tiver pendências de meses anteriores, a mensagem traz também o bloco de pendências (RN-19).
 - O botão usa o texto do passo mesmo que ele esteja desligado na régua: desligar um passo só impede o envio automático (Q-03).
-- No protótipo, o registro é simulado. Na versão final, o registro cria um envio com o canal "manual" (RF-35).
+- O registro cria um envio com o canal "manual" (RF-35).
 
 #### RF-15 · Próximo lembrete automático
 
@@ -375,9 +373,9 @@ Os canais de cada cliente seguem o RF-05: por padrão, todos os que têm contato
 
 #### RF-20 · Obrigações por tipo de cliente
 
-Calendário padrão do protótipo (datas de exemplo):
+Calendário padrão (datas de exemplo, a conferir):
 
-| Obrigação | Tipo de cliente | Periodicidade | Prazo no protótipo | Competência mostrada (RN-23) |
+| Obrigação | Tipo de cliente | Periodicidade | Prazo padrão | Competência mostrada (RN-23) |
 |---|---|---|---|---|
 | DAS-MEI | MEI | Mensal | Dia 20 | Mês anterior |
 | DAS do Simples | Simples | Mensal | Dia 20 | Mês anterior |
@@ -582,7 +580,7 @@ As regras marcadas como **invioláveis** estão na seção 6 do Briefing e não 
 
 ### 4.1 Detalhe da RN-02 (status)
 
-No protótipo, o status compara só o **dia** de vencimento com o dia de hoje, o que funciona apenas para o mês corrente. Com o histórico (RF-18), a regra passa a comparar **datas**, sem mudar o resultado no mês corrente:
+O status compara **datas**, e não só o dia do mês, para funcionar também com o histórico (RF-18):
 
 ```text
 vencimento = data(ano_ref, mes_ref, cliente.dia_vencimento)
@@ -642,7 +640,7 @@ Exemplo de bloco de pendências **(proposto)**: "Também está em aberto: outubr
 
 ## 5. Modelo de dados
 
-No protótipo, tudo fica num objeto salvo no navegador. Para a versão final, as fontes sugerem as tabelas abaixo, já com os ajustes das decisões registradas. Este é o **modelo lógico**. O **esquema físico** está em `supabase/migrations/`, descrito na [Arquitetura](./Arquitetura.md), seção 4. Os dados de exemplo do protótipo não serão migrados **(proposto)**.
+As fontes sugerem as tabelas abaixo, já com os ajustes das decisões registradas. Este é o **modelo lógico**. O **esquema físico** está em `supabase/migrations/`, descrito na [Arquitetura](./Arquitetura.md), seção 4.
 
 **Isolamento (ADR-0004).** Toda tabela de dados do contador tem a coluna `contador_id`, com RLS, e as chaves estrangeiras entre essas tabelas são compostas (`id` + `contador_id`). As chaves únicas também começam por `contador_id`, para que um contador não descubra, por erro de chave duplicada, que um dado de outro existe. Para o diagrama ficar legível, as ligações com `CONTADORES` aparecem só nas tabelas principais.
 
@@ -780,8 +778,8 @@ erDiagram
 
 | Código | Categoria | Requisito | Status | Fase | Origem |
 |---|---|---|---|---|---|
-| RNF-01 | Usabilidade | Funcionar no celular; no celular, a lista vira cartões | Feito | F2 | Doc |
-| RNF-02 | Usabilidade | Tema claro e escuro | Feito | F2 | Doc |
+| RNF-01 | Usabilidade | Funcionar no celular; no celular, a lista vira cartões | A fazer | F2 | Doc |
+| RNF-02 | Usabilidade | Tema claro e escuro | A fazer | F2 | Doc |
 | RNF-03 | Disponibilidade dos dados | Dados guardados no servidor e acessíveis do celular e do computador | A fazer | F2 | Doc |
 | RNF-04 | Conformidade | WhatsApp só pela API oficial, com modelos fixos aprovados, para não bloquear o número (ADR-0002) | A fazer | F4 | Doc |
 | RNF-05 | Privacidade | LGPD: login seguro e consentimento, porque o sistema guarda dados de terceiros | A fazer | F2 | Doc |
@@ -893,3 +891,4 @@ As três questões abaixo ficam para a discussão das integrações, antes da F4
 | 1.6 | 11/11/2026 | Esquema físico em `supabase/migrations/`: `cobrancas.vencimento` e chaves únicas começando por `contador_id` |
 | 1.7 | 11/11/2026 | Nome do produto: Neximob. Login por e-mail e senha (ADR-0008). Mecanismo das pendências confirmado (RN-19) e `contadores.texto_pendencia` |
 | 1.8 | 12/11/2026 | Backend das fases F2 e F3 implementado; o contrato está em [API](./API.md) |
+| 1.9 | 27/11/2026 | Status "Feito" e "Simulado" viram "A fazer" (a tela); C-07 passa a tela única com a Direção visual |

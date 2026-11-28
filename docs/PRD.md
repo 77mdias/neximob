@@ -6,7 +6,7 @@
 |---|---|
 | **Produto** | Neximob |
 | **Repositório** | `neximob` |
-| **Versão** | 1.7, rascunho para validação |
+| **Versão** | 1.8, rascunho para validação |
 | **Data** | 11/11/2026 |
 | **Fontes** | *Agenda Contábil: Documentação do Produto* e *Agenda Contábil: Briefing para desenvolvimento*, ambos de 03/11/2026, de William Henrique Moreira Dias |
 | **Documentos relacionados** | [SRS](./SRS.md) · [Mapa de fluxo](./Mapa%20de%20fluxo.md) · [Arquitetura](./Arquitetura.md) · [Decisões de arquitetura (ADR)](./adr/README.md) |
@@ -24,7 +24,7 @@ O Neximob é um sistema simples para o **contador autônomo ou de escritório pe
 
 Tudo fica numa tela só: o resumo do mês no topo e três abas (Cobranças, Obrigações e Régua de cobrança).
 
-**Situação atual.** Existe um protótipo clicável: uma página HTML com JavaScript puro, sem biblioteca e sem servidor. Os clientes são de exemplo, os dados ficam só no navegador de quem abre e nenhuma mensagem é enviada de verdade. O protótipo serve de referência de telas, textos e regras para a versão final.
+**Situação atual.** A documentação e o backend no Supabase (fases F2 e F3) estão prontos. A interface ainda não existe: as telas seguem o [Mapa de fluxo](./Mapa%20de%20fluxo.md) e a [Direção visual](./Dire%C3%A7%C3%A3o%20visual.md).
 
 ---
 
@@ -133,15 +133,13 @@ Ainda não há metas numéricas. Elas devem sair da validação com contadores (
 
 ## 7. Escopo
 
-### 7.1 O que o protótipo já tem
+### 7.1 O que já existe
 
-| Parte | O que faz | Situação |
+| Parte | O que tem | Situação |
 |---|---|---|
-| Resumo do mês | Recebido, a receber, clientes em atraso e guias a fazer | Pronto |
-| Cobranças | Lista de clientes por status, filtros, marcar pago, ajustar o valor do mês (serviço extra) e mensagem pronta | Envio simulado |
-| Obrigações | Checklist por obrigação (DAS-MEI, DAS, DEFIS, DASN-SIMEI, IRPF), com feitos e faltantes, mensais e anuais | Datas de exemplo |
-| Régua de cobrança | 4 lembretes editáveis, liga e desliga, chave Pix e prévia | Sem disparo real |
-| Novo cliente | Nome, tipo, honorário mensal e dia de vencimento | Pronto |
+| Documentação | PRD, SRS, Mapa de fluxo, Arquitetura, API, ADRs e Direção visual | Pronta |
+| Backend | Banco, regras de acesso, funções da tela, rotina diária e envio por e-mail (F2 e F3) | Pronto, com testes |
+| Interface | Tela única, login e janelas | A fazer |
 
 ### 7.2 O que falta para virar produto
 
@@ -174,11 +172,11 @@ Ainda não há metas numéricas. Elas devem sair da validação com contadores (
 
 | Módulo | O que faz | Situação | Requisitos |
 |---|---|---|---|
-| **Resumo do mês** | Topo da tela com quatro cards: Recebido (com barra de %), A receber, Clientes em atraso e Guias a fazer no mês | Pronto | RF-03 |
-| **Cobranças** | Lista do mês com status (Pago, Vence dia X, Vence hoje, Atrasado há N dias), filtros, marcar pago e desfazer, ajustar o valor do mês, mensagem pronta e data do próximo lembrete. Na versão final: envio real, Pix com baixa automática e histórico | Envio simulado | RF-10 a RF-18 |
-| **Obrigações** | Checklist do mês por obrigação, com "X de Y feitos", barra de progresso, avisos de prazo e próximos prazos do ano. Na versão final: calendário editável | Datas de exemplo | RF-20 a RF-24 |
-| **Régua de cobrança** | Quatro lembretes (3 dias antes, no dia e 3 dias depois ligados; 7 dias depois desligado), chave Pix e prévia. Textos editáveis no e-mail; no WhatsApp, modelos fixos aprovados (ADR-0002). Na versão final: disparo diário automático, que inclui as pendências de meses anteriores | Sem disparo real | RF-30 a RF-35 |
-| **Clientes** | Cadastro com nome, tipo, honorário e dia de vencimento (1 a 28). Na versão final: telefone, e-mail, edição e exclusão | Parcial | RF-01, RF-02, RF-04 a RF-06 |
+| **Resumo do mês** | Topo da tela com quatro cards: Recebido (com barra de %), A receber, Clientes em atraso e Guias a fazer no mês | Backend pronto, tela a fazer | RF-03 |
+| **Cobranças** | Lista do mês com status (Pago, Vence dia X, Vence hoje, Atrasado há N dias), filtros, marcar pago e desfazer, ajustar o valor do mês, mensagem pronta e data do próximo lembrete. Na versão final: envio real, Pix com baixa automática e histórico | Backend pronto, tela a fazer | RF-10 a RF-18 |
+| **Obrigações** | Checklist do mês por obrigação, com "X de Y feitos", barra de progresso, avisos de prazo e próximos prazos do ano. Na versão final: calendário editável | Backend pronto (datas de exemplo), tela a fazer | RF-20 a RF-24 |
+| **Régua de cobrança** | Quatro lembretes (3 dias antes, no dia e 3 dias depois ligados; 7 dias depois desligado), chave Pix e prévia. Textos editáveis no e-mail; no WhatsApp, modelos fixos aprovados (ADR-0002). Na versão final: disparo diário automático, que inclui as pendências de meses anteriores | Backend pronto (e-mail), tela a fazer | RF-30 a RF-35 |
+| **Clientes** | Cadastro com nome, tipo, honorário e dia de vencimento (1 a 28). Também telefone, e-mail, edição e exclusão | Backend pronto, tela a fazer | RF-01, RF-02, RF-04 a RF-06 |
 | **Conta e assinatura** | Login por e-mail, uma conta por contador, consentimento (LGPD) e assinatura mensal | A fazer | RF-40 a RF-45, RF-50 |
 
 O detalhamento de cada requisito está no [SRS](./SRS.md), e os caminhos do usuário estão no [Mapa de fluxo](./Mapa%20de%20fluxo.md).
@@ -189,7 +187,7 @@ O detalhamento de cada requisito está no [SRS](./SRS.md), e os caminhos do usu�
 
 ```mermaid
 flowchart LR
-    F1["F1 · Validar<br/>protótipo com contador"] --> F2["F2 · Base<br/>login, banco, clientes"]
+    F1["F1 · Validar<br/>telas com contador"] --> F2["F2 · Base<br/>login, banco, clientes"]
     F2 --> F3["F3 · Cobrança real<br/>e-mail, rotina diária, envios"]
     F3 --> F4["F4 · Pix e WhatsApp<br/>baixa automática, API oficial"]
     F4 --> F5["F5 · Venda<br/>calendário fiscal, assinatura"]
@@ -197,8 +195,8 @@ flowchart LR
 
 | Fase | Objetivo | Entregas | Critério para avançar **(proposto)** |
 |---|---|---|---|
-| **F1 · Validar** | Confirmar uso e preço antes de programar | Mostrar o protótipo a um contador e ajustar | Um contador confirma que usaria e diz quanto pagaria |
-| **F2 · Base** | Dados reais, seguros e acessíveis de qualquer aparelho | Login, banco de dados e cadastro completo do cliente, com as telas do protótipo ligadas ao banco | O contador usa o app com os próprios clientes, no celular e no computador |
+| **F1 · Validar** | Confirmar uso e preço antes de construir a interface | Mostrar as telas desenhadas a um contador e ajustar | Um contador confirma que usaria e diz quanto pagaria |
+| **F2 · Base** | Dados reais, seguros e acessíveis de qualquer aparelho | Login, banco de dados, cadastro completo do cliente e a tela única ligada ao banco | O contador usa o app com os próprios clientes, no celular e no computador |
 | **F3 · Cobrança real** | Lembretes saem sozinhos | Envio por e-mail, rotina diária e registro dos envios | Um ciclo mensal completo sem o contador disparar nada à mão |
 | **F4 · Pix e WhatsApp** | Baixa automática e o canal que o cliente mais usa | Pix com baixa automática e WhatsApp pela API oficial | Pagamentos por Pix baixados sem intervenção |
 | **F5 · Venda** | Produto vendável | Calendário fiscal editável e assinatura mensal | Primeiros contadores pagando |
@@ -229,7 +227,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 - **WhatsApp.** Mensagem em massa exige a API oficial e modelos de mensagem aprovados. Disparo automático por número comum pode bloquear o número.
 - **LGPD.** O sistema guarda nome, valores e situação fiscal de terceiros. Precisa de login seguro e de consentimento.
 - **Regras fiscais mudam.** Datas e obrigações devem ser fáceis de atualizar e conferidas por um contador.
-- **Experiência.** Tudo em português, valores em reais, funcionando no celular, mantendo o visual do protótipo.
+- **Experiência.** Tudo em português, valores em reais, funcionando no celular, numa tela única (resumo do mês e três abas).
 - **Tecnologia.** Next.js em TypeScript, hospedado na Cloudflare, e Supabase (Postgres e Auth) na região de São Paulo (ADR-0001, ADR-0006).
 - **Documentos dos clientes.** O app não guarda CPF nem CNPJ. Quando o provedor de Pix exigir, o dado fica só nele (ADR-0003).
 
@@ -273,7 +271,7 @@ Estas regras vêm do Briefing (seção 6) e valem para qualquer implementação.
 | Rotina diária | Supabase Cron em duas etapas: planejar no banco às 9h e enviar em lotes, sem duplicar mensagens | 09/11/2026 | ADR-0005 |
 | Hospedagem e região | Next.js na Cloudflare (o plano gratuito da Vercel não permite uso comercial); Supabase em São Paulo; TypeScript | 09/11/2026 | ADR-0006 |
 | Provedor de e-mail | Resend, para os e-mails de login e para os lembretes | 09/11/2026 | ADR-0007 |
-| Nome do produto | **Neximob**. Nas fontes, o produto se chamava Agenda Contábil; no protótipo, Prazo Certo | 11/11/2026 | — |
+| Nome do produto | **Neximob**. Nas fontes, o produto se chamava Agenda Contábil | 11/11/2026 | — |
 | Método de login | E-mail e senha, com confirmação do e-mail e recuperação por e-mail | 11/11/2026 | ADR-0008 |
 | Mecanismo das pendências | Uma mensagem por dia e canal, com o mês e o total em aberto; só pendências: uma mensagem por mês, no dia do vencimento | 11/11/2026 | SRS: RN-19, seção 4.3 |
 | Questões de regra Q-01, Q-03, Q-05 a Q-11 e Q-13 a Q-15 | Adotadas as sugestões do SRS (por exemplo: lembretes às 9h, inativar cliente por padrão, competência mostrada nas obrigações) | 09/11/2026 | SRS, seção 9.1 |
@@ -299,7 +297,7 @@ As questões de regra e de comportamento (cliente cadastrado depois do venciment
 
 ## 13. Validação com contador (Fase 1)
 
-O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. O primeiro passo é mostrá-lo a um contador e anotar o que ele usaria e quanto pagaria.
+A validação usa as telas desenhadas pelo UX (tela única no celular e no computador) **(proposto)**. O primeiro passo é mostrá-las a um contador e anotar o que ele usaria e quanto pagaria.
 
 **Perguntas para o contador**
 
@@ -353,3 +351,4 @@ O protótipo mostra a ideia completa, mas nada é enviado nem salvo de verdade. 
 | 1.5 | 09/11/2026 | Decisão: e-mail com o Resend (ADR-0007) |
 | 1.6 | 11/11/2026 | Link para a documentação técnica (Arquitetura) |
 | 1.7 | 11/11/2026 | Nome do produto: Neximob. Decisões: login por e-mail e senha (ADR-0008) e mecanismo das pendências |
+| 1.8 | 27/11/2026 | Escopo atual reflete docs e backend prontos, interface a fazer; F1 valida com telas desenhadas; link para a Direção visual |

@@ -6,16 +6,15 @@
 
 ## Contexto
 
-- O protótipo é uma página HTML com JavaScript puro, sem servidor. Os dados ficam no navegador.
 - A versão final precisa de login por e-mail, banco de dados com uma conta por contador, rotina diária no servidor e integrações com e-mail, WhatsApp e Pix.
-- O Briefing sugere Next.js e Supabase (ou Firebase), "para não montar servidor do zero", e pede para manter o visual do protótipo, tudo em português e funcionando no celular.
+- O Briefing sugere Next.js e Supabase (ou Firebase), "para não montar servidor do zero", e pede uma tela única (resumo do mês no topo e três abas), tudo em português e funcionando no celular.
 - É um projeto pequeno, que precisa chegar rápido ao uso com dados reais (F2).
 
 ## Decisão
 
 | Parte | Escolha |
 |---|---|
-| Interface | **Next.js (React).** As telas do protótipo são reescritas como componentes, mantendo o visual |
+| Interface | **Next.js (React).** As telas são construídas como componentes, seguindo a [Direção visual](../Dire%C3%A7%C3%A3o%20visual.md) |
 | Servidor | **Rotas de servidor do Next.js**, para as ações que usam chaves secretas e para receber os avisos dos provedores (webhooks). O local dos webhooks será revisto na ADR das integrações (ver ADR-0006) |
 | Banco de dados | **Postgres do Supabase**, com o modelo lógico do SRS (seção 5) |
 | Login | **Supabase Auth**, com login por e-mail |
@@ -27,7 +26,7 @@
 | Alternativa | Por que não |
 |---|---|
 | Firebase | O banco principal (Firestore) é de documentos. O modelo do produto é relacional (contador → clientes → cobranças → envios), com somas e filtros por mês que ficam mais simples e mais seguros em SQL |
-| JavaScript puro, como o protótipo | Serve para telas simples, mas login, rotas de servidor e webhooks exigiriam montar um servidor à parte |
+| JavaScript puro, sem framework | Serve para telas simples, mas login, rotas de servidor e webhooks exigiriam montar um servidor à parte |
 | Servidor próprio (por exemplo, Node com Postgres gerenciado) | Mais infraestrutura para manter. O Supabase já entrega banco, login e políticas de acesso |
 
 ## Consequências
